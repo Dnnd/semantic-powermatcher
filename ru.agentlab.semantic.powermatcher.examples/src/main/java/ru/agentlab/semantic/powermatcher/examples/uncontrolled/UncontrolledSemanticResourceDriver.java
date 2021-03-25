@@ -4,8 +4,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
-import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
-import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.flexiblepower.messaging.Endpoint;
 import org.flexiblepower.ral.ResourceControlParameters;
 import org.flexiblepower.ral.drivers.uncontrolled.PowerState;
@@ -105,7 +103,7 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
         var ctx = new ConnectionContext(executor, conn);
         Thing thing = Thing.of(iri(config.thingIRI()), ctx);
 
-        this.subscription = thing.getPropertyAffordances()
+        this.subscription = thing.getAffordancesWithType()
                 .doOnNext(prop -> logger.info(prop.toString()))
                 .filter(prop -> prop.hasType(POWER))
                 .flatMap(powerProp -> {
