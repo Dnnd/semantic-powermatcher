@@ -38,9 +38,12 @@ ex:GenericLocation
 ex:GenericPowerDemand
   a ex:Power, td:PropertyAffordance.
 
-ex:HeaterModel_1
+ex:Heater_1
   a td:Thing, ex:Heater ;
   tdx:hasThingModel ex:HeaterModel ;
+  ex:length "2.5"^^xsd:double ;
+  ex:height "2.5"^^xsd:double ;
+  ex:width "2.5"^^xsd:double ;
   td:hasPropertyAffordance ex:Heater_1_IndoorTemperature, ex:Heater_1_OutdoorTemperature, ex:Heater_1_PowerDemand ;
   td:hasActionAffordance ex:Heater_1_SetHeatingPowerAction.
 
@@ -79,3 +82,9 @@ ex:Heater_1_OutdoorTemperature_Observation_1
 ex:Heater_1_PowerDemand
   a ex:Power, td:PropertyAffordance ;
   tdx:describedBy ex:GenericPowerDemand.
+
+ex:Heater_1_PowerDemand_Observation_1
+  a tdx:PropertyState ;
+  tdx:hasValue "10"^^xsd:double ;
+  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
+  tdx:describedByAffordance ex:Heater_1_PowerDemand.
