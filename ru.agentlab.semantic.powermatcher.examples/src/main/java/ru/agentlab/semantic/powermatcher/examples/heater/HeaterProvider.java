@@ -3,6 +3,7 @@ package ru.agentlab.semantic.powermatcher.examples.heater;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
@@ -22,6 +23,7 @@ import ru.agentlab.changetracking.filter.ChangetrackingFilter;
 import ru.agentlab.changetracking.filter.Transformations;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.changetracking.sail.TransactionChanges;
+import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.observation.api.Action;
 import ru.agentlab.semantic.wot.observation.api.Observation;
 import ru.agentlab.semantic.wot.observations.*;
@@ -30,14 +32,12 @@ import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingActionAffordance;
 import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
 
-import javax.measure.unit.SI;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -49,54 +49,13 @@ import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_INPUT;
 public class HeaterProvider {
 
     private final Logger logger = LoggerFactory.getLogger(HeaterProvider.class);
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private SailRepository repository;
-    private final List<Disposable> subscriptions = new CopyOnWriteArrayList<>();
-
-    public static class HeaterState {
-        public HeaterState(HeaterSimulationModel model,
-                           ThingPropertyAffordance power,
-                           ThingPropertyAffordance indoor,
-                           ThingPropertyAffordance outdoor,
-                           ThingActionAffordance setPowerAffordance) {
-            this.model = model;
-            this.power = power;
-            this.indoor = indoor;
-            this.outdoor = outdoor;
-            this.setPowerAffordance = setPowerAffordance;
-        }
-
-        public HeaterSimulationModel getModel() {
-            return model;
-        }
-
-        public ThingPropertyAffordance getPower() {
-            return power;
-        }
-
-        public ThingPropertyAffordance getIndoor() {
-            return indoor;
-        }
-
-        public ThingPropertyAffordance getOutdoor() {
-            return outdoor;
-        }
-
-        public ThingActionAffordance getSetPowerAffordance() {
-            return setPowerAffordance;
-        }
-
-        private final HeaterSimulationModel model;
-        private final ThingPropertyAffordance power;
-        private final ThingPropertyAffordance indoor;
-        private final ThingPropertyAffordance outdoor;
-        private final ThingActionAffordance setPowerAffordance;
-
-    }
+    private Disposable subscription;
 
     @Reference
-    public void bindSailRepository(SailRepository repository) {
-        this.repository = repository;
+    public void bindSailRepository(SailRepositoryProvider repositoryProvider) {
+        this.repository = repositoryProvider.getRepository();
     }
 
     @Activate
@@ -106,26 +65,14 @@ public class HeaterProvider {
         var sailConn = (ChangeTrackerConnection) repoConn.getSailConnection();
         var context = new ConnectionContext(executor, repoConn);
 
-        Disposable outer = populateThingModel(iri(config.thingIRI()), context)
+        subscription = populateThingModel(iri(config.thingIRI()), context)
+                .flatMap(this::fetchInitialState)
+                .flatMapMany(state -> scheduleSimulation(state, interval))
                 .doFinally(signal -> {
                     sailConn.close();
                     repoConn.close();
                 })
-                .subscribe(thing -> fetchInitialState(thing).subscribe(state -> {
-                    Disposable simulation = scheduleSimulation(state.getIndoor(),
-                                                               state.getModel(),
-                                                               interval
-                    ).subscribe();
-                    var setPowerActionIRI = state.getSetPowerAffordance().getPropertyAffordanceIRI();
-                    var setPowerInvocationFilter = createObservationFilterForAction(setPowerActionIRI);
-                    Disposable stateUpdate = sailConn.events(Schedulers.fromExecutorService(executor))
-                            .flatMap(changes -> extractLatestInvocation(changes, setPowerInvocationFilter))
-                            .subscribe(actionInvocation -> {
-                                state.getModel().setHeatingPower(actionInvocation.getInput());
-                            });
-                    subscriptions.addAll(List.of(simulation, stateUpdate));
-                }));
-        subscriptions.add(outer);
+                .subscribe();
     }
 
     private Mono<Action<Float, Void, DefaultActionMetadata>> extractLatestInvocation(TransactionChanges changes, ChangetrackingFilter setPowerInvocationFilter) {
@@ -158,28 +105,54 @@ public class HeaterProvider {
         return new Building(len, width, height);
     }
 
-    private Flux<Void> scheduleSimulation(ThingPropertyAffordance temperatureAffordance, HeaterSimulationModel state, Duration interval) {
-        return Flux.interval(interval, Schedulers.fromExecutor(temperatureAffordance.getContext().getExecutor()))
-                .doOnNext(tick -> {
-                    logger.info("running for {} seconds", tick * interval.toSeconds());
-                    state.calculate(interval);
+    private Flux<Void> scheduleSimulation(HeaterState state, Duration interval) {
+        return Flux.interval(interval, Schedulers.fromExecutor(state.getIndoor().getContext().getExecutor()))
+                .flatMap(tick -> {
+                    ThingActionAffordance setPowerAffordance = state.getSetPowerAffordance();
+                    var metadataBuilder = new DefaultActionMetadataBuilder(setPowerAffordance.getActionAffordanceIRI());
+                    var actionBuilder = new FloatSetterBuilder<>(metadataBuilder);
 
-                }).flatMap(tick -> publishNewState(temperatureAffordance, state));
+                    var latestInvocation = setPowerAffordance.latestInvocation(actionBuilder);
+                    return latestInvocation.doOnNext(setPowerCommand -> {
+                        var model = state.getModel();
+                        model.setHeatingPower(setPowerCommand.getInput());
+                    }).then(Mono.fromRunnable(() -> publishNewState(state)));
+                });
     }
 
-    private Mono<Void> publishNewState(ThingPropertyAffordance affordance, HeaterSimulationModel state) {
-        var context = affordance.getContext();
+    private Model makeFloatObservation(ThingPropertyAffordance affordance, double value) {
+        Model model = new LinkedHashModel();
+        OffsetDateTime now = OffsetDateTime.now();
+        String time = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        IRI observationIRI = iri("https://example.agentlab.ru#" + UUID.randomUUID().toString());
+        model.add(observationIRI, RDF.TYPE, PROPERTY_STATE);
+        model.add(observationIRI, DESCRIBED_BY_AFFORDANCE, affordance.getIRI());
+        model.add(observationIRI,
+                  HAS_VALUE,
+                  Values.literal(value)
+        );
+        model.add(observationIRI, MODIFIED, Values.literal(time, XSD.DATETIME));
+        return model;
+    }
+
+    private Mono<Void> publishNewState(HeaterState state) {
+        var context = state.getIndoor().getContext();
         var future = CompletableFuture.runAsync(() -> {
             var conn = context.getConnection();
             logger.info("publishing new state={}", state);
-            IRI obsId = iri("https://example.agentlab.ru#" + UUID.randomUUID().toString());
-            OffsetDateTime now = OffsetDateTime.now();
-            String time = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+            Model indoorTemperatureObservation = makeFloatObservation(state.getIndoor(),
+                                                                      state.getModel().getIndoorTemperature()
+            );
+            Model outdoorTemperatureObservation = makeFloatObservation(state.getIndoor(),
+                                                                       state.getModel().getOutdoorTemperature()
+            );
+            Model heatingPowerObservation = makeFloatObservation(state.getIndoor(),
+                                                                 state.getModel().getHeatingPower()
+            );
             conn.begin();
-            conn.add(obsId, RDF.TYPE, PROPERTY_STATE);
-            conn.add(obsId, DESCRIBED_BY_AFFORDANCE, affordance.getIRI());
-            conn.add(obsId, HAS_VALUE, Values.literal(state.getCurrentIndoorTemperature().doubleValue(SI.CELSIUS)));
-            conn.add(obsId, MODIFIED, Values.literal(time, XSD.DATETIME));
+            conn.add(indoorTemperatureObservation);
+            conn.add(outdoorTemperatureObservation);
+            conn.add(heatingPowerObservation);
             conn.commit();
         }, context.getExecutor());
         return Mono.fromFuture(future);
@@ -210,10 +183,9 @@ public class HeaterProvider {
 
         Building building = fetchLocationBuilding(thing);
         return Mono.zip((affordances) -> {
-            FloatObservation<DefaultObservationMetadata>[] typedAffordances = (FloatObservation<DefaultObservationMetadata>[]) affordances;
-            var initialIndoorTemperature = typedAffordances[2].getValue();
-            var initialOutdoorTemperature = typedAffordances[1].getValue();
-            var initialHeatingPower = typedAffordances[0].getValue();
+            var initialIndoorTemperature = ((FloatObservation<DefaultObservationMetadata>) affordances[2]).getValue();
+            var initialOutdoorTemperature = ((FloatObservation<DefaultObservationMetadata>) affordances[1]).getValue();
+            var initialHeatingPower = ((FloatObservation<DefaultObservationMetadata>) affordances[0]).getValue();
             var simulationModel = new HeaterSimulationModel(building,
                                                             initialHeatingPower,
                                                             initialOutdoorTemperature,
@@ -254,7 +226,8 @@ public class HeaterProvider {
 
     @Deactivate
     public void deactivate() {
-        subscriptions.forEach(Disposable::dispose);
+        repository = null;
+        subscription.dispose();
         executor.shutdown();
     }
 

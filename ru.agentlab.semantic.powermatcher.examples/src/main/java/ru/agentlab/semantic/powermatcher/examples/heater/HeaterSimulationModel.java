@@ -22,6 +22,7 @@ public class HeaterSimulationModel {
     private double indoorTemperature;
     private double outdoorTemperature;
     private double heatingPower;
+
     private final double buildingLength;
     private final double buildingWidth;
     private final double buildingHeight;
@@ -40,12 +41,16 @@ public class HeaterSimulationModel {
         this.buildingHeight = building.getHeight();
     }
 
-    public Measurable<Temperature> getCurrentIndoorTemperature() {
-        return Measure.valueOf(indoorTemperature, SI.CELSIUS);
+    public double getIndoorTemperature() {
+        return indoorTemperature;
     }
 
     public void setOutdoorTemperature(double temperatureValue) {
         outdoorTemperature = temperatureValue;
+    }
+
+    public double getOutdoorTemperature() {
+        return outdoorTemperature;
     }
 
     public void setHeatingPower(double powerValue) {
@@ -90,8 +95,25 @@ public class HeaterSimulationModel {
         return airHeatCapacity * airDensity() * airVolume();
     }
 
-    public Measurable<Power> getHeatingPower() {
-        return Measure.valueOf(heatingPower, SI.WATT);
+    public double getHeatingPower() {
+        return heatingPower;
     }
 
+    @Override
+    public String toString() {
+        return "HeaterSimulationModel{" +
+                "wallThermalTransferResistance=" + wallThermalTransferResistance +
+                ", airHeatCapacity=" + airHeatCapacity +
+                ", airExchangeRate=" + airExchangeRate +
+                ", floors=" + floors +
+                ", floorHeight=" + floorHeight +
+                ", airVolumeReductionFactor=" + airVolumeReductionFactor +
+                ", indoorTemperature=" + indoorTemperature +
+                ", outdoorTemperature=" + outdoorTemperature +
+                ", heatingPower=" + heatingPower +
+                ", buildingLength=" + buildingLength +
+                ", buildingWidth=" + buildingWidth +
+                ", buildingHeight=" + buildingHeight +
+                '}';
+    }
 }
