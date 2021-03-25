@@ -80,7 +80,7 @@ public class Thing {
         throw new RuntimeException("not found");
     }
 
-    public Flux<ThingPropertyAffordance> getPropertyAffordances(IRI... desiredAffordanceType) {
+    public Flux<ThingPropertyAffordance> getAffordancesWithType(IRI... desiredAffordanceType) {
         return Flux.create(sink -> CompletableFuture.supplyAsync(() -> {
             Variable affordanceIRI = var("affordanceIRI");
 

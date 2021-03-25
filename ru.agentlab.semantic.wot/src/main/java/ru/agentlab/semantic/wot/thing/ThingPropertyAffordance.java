@@ -11,7 +11,10 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import reactor.core.publisher.Mono;
 import ru.agentlab.semantic.wot.observation.api.Observation;
 import ru.agentlab.semantic.wot.observation.api.ObservationBuilder;
+import ru.agentlab.semantic.wot.observations.DefaultObservationMetadata;
+import ru.agentlab.semantic.wot.observations.FloatObservation;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -72,12 +75,12 @@ public class ThingPropertyAffordance {
                     tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
                     tp(obs, MODIFIED, mostRecent),
                     tp(obs, HAS_VALUE, value)
-            ).where(select(Expressions.max(lastModified).as(mostRecent))
-                            .where(
-                                    tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
-                                    tp(obs, MODIFIED, lastModified),
-                                    tp(obs, HAS_VALUE, value)
+            ).where(select(obs, Expressions.max(lastModified).as(mostRecent))
+                            .where(tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
+                                   tp(obs, MODIFIED, lastModified)
                             )
+                            .groupBy(obs),
+                    tp(obs, HAS_VALUE, value)
             );
             conn.prepareGraphQuery(query.getQueryString()).evaluate().forEach(builder::process);
             return builder.build();
