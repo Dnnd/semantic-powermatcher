@@ -1,0 +1,81 @@
+@prefix td:         <https://www.w3.org/2019/wot/td#> .
+@prefix schema:     <http://schema.org/> .
+@prefix hctl:       <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix dct:        <http://purl.org/dc/terms/> .
+@prefix wotsec:     <https://www.w3.org/2019/wot/security#> .
+@prefix xsd:        <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:       <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix htv:        <http://www.w3.org/2011/http#> .
+@prefix jsonschema: <https://www.w3.org/2019/wot/json-schema#> .
+@prefix tdx:        <https://tdx.agentlab.ru/#> .
+@prefix saref:      <https://w3id.org/saref#> .
+@prefix ex:         <https://example.agentlab.ru/#> .
+
+ex:HeaterModel
+  a ex:Heater, tdx:ThingModel ;
+  dct:title "Generic Heater" ;
+  td:hasPropertyAffordance ex:GenericIndoorTemperature, ex:GenericPowerDemand, ex:GenericOutdoorTemperature ;
+  td:hasActionAffordance ex:GenericSetHeatingPower.
+
+ex:GenericSetHeatingPower
+  a td:ActionAffordance, ex:SetCommand ;
+  td:hasInputSchema ex:GenricSetPowerInput.
+
+ex:GenericSetHeatingPowerInput
+  a xsd:double.
+
+ex:GenericIndoorTemperature
+  a ex:Temperature, td:PropertyAffordance ;
+  ex:LocationType ex:Inside.
+
+ex:GenericOutdoorTemperature
+  a ex:Temperature, td:PropertyAffordance ;
+  ex:LocationType ex:Outside.
+
+ex:GenericLocation
+  a ex:Location.
+
+ex:GenericPowerDemand
+  a ex:Power, td:PropertyAffordance.
+
+ex:HeaterModel_1
+  a td:Thing, ex:Heater ;
+  tdx:hasThingModel ex:HeaterModel ;
+  td:hasPropertyAffordance ex:Heater_1_IndoorTemperature, ex:Heater_1_OutdoorTemperature, ex:Heater_1_PowerDemand ;
+  td:hasActionAffordance ex:Heater_1_SetHeatingPowerAction.
+
+ex:Heater_1_SetHeatingPowerAcion
+  a td:ActionAffordance, ex:SetCommand ;
+  td:hasInputSchema ex:GenericSetHeatingPowerInput ;
+  td:describedBy ex:GenericSetHeatingPower.
+
+#ex:Heater_1_SetPowerInput_Invocation_1
+#  a tdx:ActionInvocation ;
+#  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
+#  tdx:hasInput "1000"^^xsd::double.
+
+ex:Heater_1_IndoorTemperature
+  a ex:Temperature, td:PropertyAffordance ;
+  ex:LocationType ex:Inside ;
+  tdx:describedBy ex:GenericIndoorTemperature.
+
+ex:Heater_1_IndoorTemperature_Observation_1
+  a tdx:PropertyState ;
+  tdx:hasValue "10"^^xsd:double ;
+  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
+  tdx:describedByAffordance ex:Heater_1_IndoorTemperature.
+
+ex:Heater_1_OutdoorTemperature
+  a ex:Temperature, td:PropertyAffordance ;
+  ex:LocationType ex:Outside ;
+  tdx:describedBy ex:GenericOutdoorTemperature.
+
+ex:Heater_1_OutdoorTemperature_Observation_1
+  a tdx:PropertyState ;
+  tdx:hasValue "10"^^xsd:double ;
+  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
+  tdx:describedByAffordance ex:Heater_1_OutdoorTemperature.
+
+ex:Heater_1_PowerDemand
+  a ex:Power, td:PropertyAffordance ;
+  tdx:describedBy ex:GenericPowerDemand.
