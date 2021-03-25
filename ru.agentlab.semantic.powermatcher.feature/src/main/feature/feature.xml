@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<features xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          name="ru.agentlab.semantic.powermatcher"
+          xmlns="http://karaf.apache.org/xmlns/features/v1.4.0"
+          xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.4.0 http://karaf.apache.org/xmlns/features/v1.4.0">
+    <feature name="semantic-powermatcher-demo" version="${project.version}">
+        <bundle>mvn:ru.agentlab/ru.agentlab.semantic.powermatcher.examples/${project.version}</bundle>
+        <bundle>mvn:ru.agentlab/ru.agentlab.semantic.wot/${project.version}</bundle>
+<!--        <feature dependency="true">changetracking</feature>-->
+<!--        <feature dependency="true">fp-demo</feature>-->
+    </feature>
+
+</features>
