@@ -1,20 +1,25 @@
 package ru.agentlab.semantic.wot.thing;
 
-import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
+import org.eclipse.rdf4j.sail.SailConnection;
 
 import java.util.concurrent.ExecutorService;
 
 public class ConnectionContext {
     private final ExecutorService executor;
-    private final RepositoryConnection connection;
+    private final SailRepositoryConnection connection;
 
-    public ConnectionContext(ExecutorService executor, RepositoryConnection connection) {
+    public ConnectionContext(ExecutorService executor, SailRepositoryConnection connection) {
         this.executor = executor;
         this.connection = connection;
     }
 
-    public RepositoryConnection getConnection() {
+    public SailRepositoryConnection getConnection() {
         return connection;
+    }
+
+    public SailConnection getSailConnection() {
+        return connection.getSailConnection();
     }
 
     public ExecutorService getExecutor() {

@@ -1,9 +1,6 @@
 package ru.agentlab.semantic.wot.thing;
 
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -63,7 +60,7 @@ public class Thing {
                 propertyAffordance
         );
         for (Statement ignored : properties) {
-            return ThingActionAffordance.of(propertyAffordance, context);
+            return ThingActionAffordance.of(thingIRI, propertyAffordance, context);
         }
         throw new RuntimeException("not found");
     }
@@ -80,7 +77,7 @@ public class Thing {
         throw new RuntimeException("not found");
     }
 
-    public Flux<ThingPropertyAffordance> getAffordancesWithType(IRI... desiredAffordanceType) {
+    public Flux<ThingPropertyAffordance> getPropertyAffordancesWithType(IRI... desiredAffordanceType) {
         return Flux.create(sink -> CompletableFuture.supplyAsync(() -> {
             Variable affordanceIRI = var("affordanceIRI");
 
@@ -111,5 +108,9 @@ public class Thing {
 
     public ConnectionContext getContext() {
         return context;
+    }
+
+    public IRI getIRI() {
+        return thingIRI;
     }
 }
