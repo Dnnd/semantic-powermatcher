@@ -3,18 +3,18 @@ package ru.agentlab.semantic.powermatcher.examples.heater;
 import ru.agentlab.semantic.wot.thing.ThingActionAffordance;
 import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
 
-public class HeaterState {
+public class HeaterSimulationTwin {
     private final HeaterSimulationModel model;
     private final ThingPropertyAffordance power;
     private final ThingPropertyAffordance indoor;
     private final ThingPropertyAffordance outdoor;
     private final ThingActionAffordance setPowerAffordance;
 
-    public HeaterState(HeaterSimulationModel model,
-                       ThingPropertyAffordance power,
-                       ThingPropertyAffordance indoor,
-                       ThingPropertyAffordance outdoor,
-                       ThingActionAffordance setPowerAffordance) {
+    public HeaterSimulationTwin(HeaterSimulationModel model,
+                                ThingPropertyAffordance power,
+                                ThingPropertyAffordance indoor,
+                                ThingPropertyAffordance outdoor,
+                                ThingActionAffordance setPowerAffordance) {
         this.model = model;
         this.power = power;
         this.indoor = indoor;

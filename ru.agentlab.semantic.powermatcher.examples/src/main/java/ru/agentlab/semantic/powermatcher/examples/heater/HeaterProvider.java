@@ -105,11 +105,11 @@ public class HeaterProvider {
         return new Building(len, width, height);
     }
 
-    private Flux<Void> scheduleSimulation(HeaterState state, Duration interval) {
+    private Flux<Void> scheduleSimulation(HeaterSimulationTwin state, Duration interval) {
         return Flux.interval(interval, Schedulers.fromExecutor(state.getIndoor().getContext().getExecutor()))
                 .flatMap(tick -> {
                     ThingActionAffordance setPowerAffordance = state.getSetPowerAffordance();
-                    var metadataBuilder = new DefaultActionMetadataBuilder(setPowerAffordance.getActionAffordanceIRI());
+                    var metadataBuilder = new DefaultActionMetadataBuilder(setPowerAffordance.getIRI());
                     var actionBuilder = new FloatSetterBuilder<>(metadataBuilder);
 
                     var latestInvocation = setPowerAffordance.latestInvocation(actionBuilder);
@@ -135,7 +135,7 @@ public class HeaterProvider {
         return model;
     }
 
-    private Mono<Void> publishNewState(HeaterState state) {
+    private Mono<Void> publishNewState(HeaterSimulationTwin state) {
         var context = state.getIndoor().getContext();
         var future = CompletableFuture.runAsync(() -> {
             var conn = context.getConnection();
@@ -171,7 +171,7 @@ public class HeaterProvider {
         return Mono.fromFuture(future);
     }
 
-    private Mono<HeaterState> fetchInitialState(Thing thing) {
+    private Mono<HeaterSimulationTwin> fetchInitialState(Thing thing) {
         IRI powerAffordanceIRI = iri("https://example.agentlab.ru/#Heater_1_PowerDemand");
         IRI outsideTemperatureIRI = iri("https://example.agentlab.ru/#Heater_1_OutdoorTemperature");
         IRI insideTemperatureIRI = iri("https://example.agentlab.ru/#Heater_1_IndoorTemperature");
@@ -192,11 +192,11 @@ public class HeaterProvider {
                                                             initialIndoorTemperature
             );
 
-            return new HeaterState(simulationModel,
-                                   powerAffordance,
-                                   insideTemperature,
-                                   outsideTemperature,
-                                   actionAffordance
+            return new HeaterSimulationTwin(simulationModel,
+                                            powerAffordance,
+                                            insideTemperature,
+                                            outsideTemperature,
+                                            actionAffordance
             );
         }, fromAffordance(powerAffordance), fromAffordance(outsideTemperature), fromAffordance(insideTemperature));
     }

@@ -77,7 +77,7 @@ public class SemanticUncontrolledResourceSimulation {
         ChangeTrackerConnection sailConn = (ChangeTrackerConnection) connection.getSailConnection();
         ConnectionContext ctx = new ConnectionContext(executor, connection);
         subscription = Mono.fromFuture(CompletableFuture.supplyAsync(() -> populateThingModel(ctx)))
-                .flatMapMany(thing -> thing.getAffordancesWithType(POWER))
+                .flatMapMany(thing -> thing.getPropertyAffordancesWithType(POWER))
                 .flatMap(affordance -> Flux.interval(Duration.ofMillis(config.intervalMsec()), scheduler)
                         .map(sec -> affordance))
                 .doFinally(ev -> {

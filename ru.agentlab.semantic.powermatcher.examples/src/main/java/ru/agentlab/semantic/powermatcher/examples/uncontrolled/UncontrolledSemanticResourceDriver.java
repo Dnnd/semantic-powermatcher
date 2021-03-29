@@ -103,7 +103,7 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
         var ctx = new ConnectionContext(executor, conn);
         Thing thing = Thing.of(iri(config.thingIRI()), ctx);
 
-        this.subscription = thing.getAffordancesWithType()
+        this.subscription = thing.getPropertyAffordancesWithType()
                 .doOnNext(prop -> logger.info(prop.toString()))
                 .filter(prop -> prop.hasType(POWER))
                 .flatMap(powerProp -> {
