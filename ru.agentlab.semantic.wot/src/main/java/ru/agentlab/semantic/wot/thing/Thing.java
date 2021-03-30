@@ -55,28 +55,20 @@ public class Thing {
         return Optional.empty();
     }
 
-    public ThingActionAffordance getActionAffordance(IRI propertyAffordance) {
-        var properties = model.getStatements(
-                thingIRI,
-                HAS_ACTION_AFFORDANCE,
-                propertyAffordance
+    public Mono<ThingActionAffordance> getActionAffordance(IRI propertyAffordance) {
+        var future = CompletableFuture.supplyAsync(
+                () -> ThingActionAffordance.of(thingIRI, propertyAffordance, context),
+                context.getExecutor()
         );
-        for (Statement ignored : properties) {
-            return ThingActionAffordance.of(thingIRI, propertyAffordance, context);
-        }
-        throw new RuntimeException("not found");
+        return Mono.fromFuture(future);
     }
 
-    public ThingPropertyAffordance getPropertyAffordance(IRI propertyAffordance) {
-        var properties = model.getStatements(
-                thingIRI,
-                HAS_PROPERTY_AFFORDANCE,
-                propertyAffordance
+    public Mono<ThingPropertyAffordance> getPropertyAffordance(IRI propertyAffordance) {
+        var future = CompletableFuture.supplyAsync(
+                () -> ThingPropertyAffordance.of(thingIRI, propertyAffordance, context),
+                context.getExecutor()
         );
-        for (Statement ignored : properties) {
-            return ThingPropertyAffordance.of(thingIRI, propertyAffordance, context);
-        }
-        throw new RuntimeException("not found");
+        return Mono.fromFuture(future);
     }
 
     public Flux<ThingPropertyAffordance> getPropertyAffordancesWithType(IRI... desiredAffordanceType) {
