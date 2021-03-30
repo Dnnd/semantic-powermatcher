@@ -95,6 +95,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
         )).flatMapMany(actionAffordance -> setPowerSink.asFlux().doOnNext(powerToSet -> {
             var setter = serializeFloatSetter(actionAffordance, powerToSet);
             repoConn.add(setter);
+            logger.info("invoked power setting action...");
         })).subscribe();
 
         onStateUpdateSubscription = thingMono.flatMapMany(this::subscribeOnHeaterStateUpdates)
@@ -175,29 +176,14 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
         Model model = new LinkedHashModel();
         OffsetDateTime now = OffsetDateTime.now();
         String time = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        IRI observationIRI = iri("https://example.agentlab.ru#" + UUID.randomUUID().toString());
-        model.add(observationIRI, RDF.TYPE, PROPERTY_STATE);
-        model.add(observationIRI, DESCRIBED_BY_AFFORDANCE, affordance.getIRI());
-        model.add(observationIRI,
+        IRI actionInvocation = iri("https://example.agentlab.ru#" + UUID.randomUUID().toString());
+        model.add(actionInvocation, RDF.TYPE, ACTION_INVOCATION);
+        model.add(actionInvocation, DESCRIBED_BY_AFFORDANCE, affordance.getIRI());
+        model.add(actionInvocation,
                   HAS_INPUT,
                   Values.literal(value)
         );
-        model.add(observationIRI, MODIFIED, Values.literal(time, XSD.DATETIME));
-        return model;
-    }
-
-    private Model serializeFloatObservation(ThingPropertyAffordance affordance, double value) {
-        Model model = new LinkedHashModel();
-        OffsetDateTime now = OffsetDateTime.now();
-        String time = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        IRI observationIRI = iri("https://example.agentlab.ru#" + UUID.randomUUID().toString());
-        model.add(observationIRI, RDF.TYPE, PROPERTY_STATE);
-        model.add(observationIRI, DESCRIBED_BY_AFFORDANCE, affordance.getIRI());
-        model.add(observationIRI,
-                  HAS_VALUE,
-                  Values.literal(value)
-        );
-        model.add(observationIRI, MODIFIED, Values.literal(time, XSD.DATETIME));
+        model.add(actionInvocation, MODIFIED, Values.literal(time, XSD.DATETIME));
         return model;
     }
 }
