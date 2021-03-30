@@ -8,11 +8,13 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.tp;
@@ -72,13 +74,13 @@ public class Thing {
                 propertyAffordance
         );
         for (Statement ignored : properties) {
-            return ThingPropertyAffordance.of(propertyAffordance, context);
+            return ThingPropertyAffordance.of(thingIRI, propertyAffordance, context);
         }
         throw new RuntimeException("not found");
     }
 
     public Flux<ThingPropertyAffordance> getPropertyAffordancesWithType(IRI... desiredAffordanceType) {
-        return Flux.create(sink -> CompletableFuture.supplyAsync(() -> {
+        var propertyAffordances = CompletableFuture.supplyAsync(() -> {
             Variable affordanceIRI = var("affordanceIRI");
 
             GraphPattern pattern;
@@ -97,13 +99,13 @@ public class Thing {
             SelectQuery query = Queries.SELECT(affordanceIRI).where(pattern).distinct();
 
             var prepared = context.getConnection().prepareTupleQuery(query.getQueryString());
-            for (var binding : prepared.evaluate()) {
+            return prepared.evaluate().stream().map(binding -> {
                 var foundIRI = (IRI) binding.getBinding("affordanceIRI").getValue();
-                sink.next(ThingPropertyAffordance.of(foundIRI, context));
-            }
+                return ThingPropertyAffordance.of(thingIRI, foundIRI, context);
+            });
+        }, context.getExecutor());
 
-            throw new RuntimeException("not found");
-        }, context.getExecutor()));
+        return Mono.fromFuture(propertyAffordances).flatMapMany(Flux::fromStream);
     }
 
     public ConnectionContext getContext() {
