@@ -2,10 +2,15 @@ package ru.agentlab.semantic.powermatcher.examples.heater;
 
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.config.SailRegistry;
+import org.flexiblepower.manager.heater.api.HeaterControlParameters;
 import org.junit.jupiter.api.Test;
 import ru.agentlab.changetracking.sail.ChangeTrackingFactory;
 import ru.agentlab.changetracking.utils.EmbeddedChangetrackingRepo;
 
+import javax.measure.Measurable;
+import javax.measure.Measure;
+import javax.measure.quantity.Power;
+import javax.measure.unit.SI;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 
@@ -18,9 +23,10 @@ public class HeaterDriverTest {
              var conn = repo.getConnection()
         ) {
             SailRepository repository = (SailRepository) conn.getRepository();
-
+            var hd = new HeaterDriver();
             var hsm = new HeaterProvider();
             hsm.bindSailRepository(() -> repository);
+            hd.bindSailRepositoryProvider(() -> repository);
             hsm.activate(new HeaterSimulationConfig() {
 
                 @Override
@@ -43,7 +49,24 @@ public class HeaterDriverTest {
                     return 1000;
                 }
             });
-            Thread.sleep(10000);
+            hd.activate(new HeaterDriver.Config() {
+
+                @Override
+                public Class<? extends Annotation> annotationType() {
+                    return getClass();
+                }
+
+                @Override
+                public String thingIRI() {
+                    return "https://example.agentlab.ru/#Heater_1";
+                }
+
+            });
+            for (int i = 0; i < 5; ++i) {
+                hd.handleControlParameters(() -> Measure.valueOf(1000, SI.WATT));
+                Thread.sleep(1000);
+            }
+            hd.deactivate();
             hsm.deactivate();
         }
     }
