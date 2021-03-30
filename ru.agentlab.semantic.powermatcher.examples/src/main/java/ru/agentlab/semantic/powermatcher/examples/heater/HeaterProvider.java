@@ -114,9 +114,10 @@ public class HeaterProvider {
 
                     var latestInvocation = setPowerAffordance.latestInvocation(actionBuilder);
                     return latestInvocation.doOnNext(setPowerCommand -> {
+                        logger.info("updating heater model state, power={}", setPowerCommand.getInput());
                         var model = state.getModel();
                         model.setHeatingPower(setPowerCommand.getInput());
-                    }).then(Mono.fromRunnable(() -> publishNewState(state)));
+                    }).then(publishNewState(state));
                 });
     }
 
@@ -140,14 +141,17 @@ public class HeaterProvider {
         var future = CompletableFuture.runAsync(() -> {
             var conn = context.getConnection();
             logger.info("publishing new state={}", state);
-            Model indoorTemperatureObservation = makeFloatObservation(state.getIndoor(),
-                                                                      state.getModel().getIndoorTemperature()
+            Model indoorTemperatureObservation = makeFloatObservation(
+                    state.getIndoor(),
+                    state.getModel().getIndoorTemperature()
             );
-            Model outdoorTemperatureObservation = makeFloatObservation(state.getIndoor(),
-                                                                       state.getModel().getOutdoorTemperature()
+            Model outdoorTemperatureObservation = makeFloatObservation(
+                    state.getIndoor(),
+                    state.getModel().getOutdoorTemperature()
             );
-            Model heatingPowerObservation = makeFloatObservation(state.getIndoor(),
-                                                                 state.getModel().getHeatingPower()
+            Model heatingPowerObservation = makeFloatObservation(
+                    state.getIndoor(),
+                    state.getModel().getHeatingPower()
             );
             conn.begin();
             conn.add(indoorTemperatureObservation);
@@ -176,29 +180,42 @@ public class HeaterProvider {
         IRI outsideTemperatureIRI = iri("https://example.agentlab.ru/#Heater_1_OutdoorTemperature");
         IRI insideTemperatureIRI = iri("https://example.agentlab.ru/#Heater_1_IndoorTemperature");
         IRI setPowerActionIRI = iri("https://example.agentlab.ru/#Heater_1_SetHeatingPowerAction");
-        ThingPropertyAffordance powerAffordance = thing.getPropertyAffordance(powerAffordanceIRI);
-        ThingPropertyAffordance outsideTemperature = thing.getPropertyAffordance(outsideTemperatureIRI);
-        ThingPropertyAffordance insideTemperature = thing.getPropertyAffordance(insideTemperatureIRI);
-        ThingActionAffordance actionAffordance = thing.getActionAffordance(setPowerActionIRI);
+        var powerAffordanceMono = thing.getPropertyAffordance(powerAffordanceIRI);
+        var outsideTemperatureMono = thing.getPropertyAffordance(outsideTemperatureIRI);
+        var insideTemperatureMono = thing.getPropertyAffordance(insideTemperatureIRI);
+        var actionAffordanceMono = thing.getActionAffordance(setPowerActionIRI);
 
         Building building = fetchLocationBuilding(thing);
-        return Mono.zip((affordances) -> {
-            var initialIndoorTemperature = ((FloatObservation<DefaultObservationMetadata>) affordances[2]).getValue();
-            var initialOutdoorTemperature = ((FloatObservation<DefaultObservationMetadata>) affordances[1]).getValue();
-            var initialHeatingPower = ((FloatObservation<DefaultObservationMetadata>) affordances[0]).getValue();
-            var simulationModel = new HeaterSimulationModel(building,
-                                                            initialHeatingPower,
-                                                            initialOutdoorTemperature,
-                                                            initialIndoorTemperature
-            );
+        return Mono.zip(powerAffordanceMono, outsideTemperatureMono, insideTemperatureMono, actionAffordanceMono)
+                .flatMap(affordances -> {
+                    var powerAffordance = affordances.getT1();
+                    var outsideTemperatureAffordance = affordances.getT2();
+                    var insideTemperatureAffordance = affordances.getT3();
+                    var powerSetter = affordances.getT4();
 
-            return new HeaterSimulationTwin(simulationModel,
-                                            powerAffordance,
-                                            insideTemperature,
-                                            outsideTemperature,
-                                            actionAffordance
-            );
-        }, fromAffordance(powerAffordance), fromAffordance(outsideTemperature), fromAffordance(insideTemperature));
+
+                    return Mono.zip((observations) -> {
+                                        var initialIndoorTemperature = ((FloatObservation<DefaultObservationMetadata>) observations[2]).getValue();
+                                        var initialOutdoorTemperature = ((FloatObservation<DefaultObservationMetadata>) observations[1]).getValue();
+                                        var initialHeatingPower = ((FloatObservation<DefaultObservationMetadata>) observations[0]).getValue();
+                                        var simulationModel = new HeaterSimulationModel(building,
+                                                                                        initialHeatingPower,
+                                                                                        initialOutdoorTemperature,
+                                                                                        initialIndoorTemperature
+                                        );
+
+                                        return new HeaterSimulationTwin(simulationModel,
+                                                                        powerAffordance,
+                                                                        insideTemperatureAffordance,
+                                                                        outsideTemperatureAffordance,
+                                                                        powerSetter
+                                        );
+                                    },
+                                    fromAffordance(powerAffordance),
+                                    fromAffordance(outsideTemperatureAffordance),
+                                    fromAffordance(insideTemperatureAffordance)
+                    );
+                });
     }
 
     private static ChangetrackingFilter createObservationFilterForProperty(IRI property) {
