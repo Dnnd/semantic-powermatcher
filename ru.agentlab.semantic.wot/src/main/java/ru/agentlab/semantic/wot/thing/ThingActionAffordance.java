@@ -18,10 +18,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.eclipse.rdf4j.model.util.Values.iri;
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.*;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_VALUE;
 
 public class ThingActionAffordance {
     private final IRI actionAffordanceIRI;
@@ -68,11 +68,9 @@ public class ThingActionAffordance {
         ).where(
                 tp(actionAffordanceIRI, DESCRIBED_BY, modelAffordanceIRI),
                 tp(actionAffordanceIRI, RDF.TYPE, type),
-                optional(
-                        tp(actionAffordanceIRI, HAS_OUTPUT_SCHEMA, outputSchema),
-                        tp(actionAffordanceIRI, HAS_INPUT_SCHEMA, inputSchema)
-                ),
-                tp(thingIRI, HAS_ACTION_AFFORDANCE, actionAffordanceIRI)
+                tp(thingIRI, HAS_ACTION_AFFORDANCE, actionAffordanceIRI),
+                optional(tp(actionAffordanceIRI, HAS_OUTPUT_SCHEMA, outputSchema)),
+                optional(tp(actionAffordanceIRI, HAS_INPUT_SCHEMA, inputSchema))
         );
         try (var results = repoConn.prepareGraphQuery(query.getQueryString()).evaluate()) {
             Model model = new LinkedHashModel();
@@ -118,21 +116,23 @@ public class ThingActionAffordance {
         CompletableFuture<Optional<Action<I, O, M>>> future = CompletableFuture.supplyAsync(() -> {
             Variable mostRecent = var("mostRecent");
             Variable lastModified = var("lastModified");
-            Variable obs = var("obs");
+            Variable invocation = var("invocation");
             Variable output = var("output");
             Variable input = var("input");
-
             var query = Queries.CONSTRUCT(
-                    tp(obs, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
-                    tp(obs, MODIFIED, mostRecent),
-                    tp(obs, HAS_INPUT, input),
-                    tp(obs, HAS_OUTPUT, output)
-            ).where(select(Expressions.max(lastModified).as(mostRecent))
-                            .where(tp(obs, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
-                                   tp(obs, MODIFIED, lastModified)
-                            ),
-                    optional(tp(obs, HAS_INPUT, input)),
-                    optional(tp(obs, HAS_OUTPUT, output))
+                    tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
+                    tp(invocation, MODIFIED, mostRecent),
+                    tp(invocation, HAS_INPUT, input),
+                    tp(invocation, HAS_OUTPUT, output)
+            ).where(
+                    select(Expressions.max(lastModified).as(mostRecent)).where(
+                            tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
+                            tp(invocation, MODIFIED, lastModified)
+                    ),
+                    tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
+                    tp(invocation, MODIFIED, mostRecent),
+                    optional(tp(invocation, HAS_INPUT, input)),
+                    optional(tp(invocation, HAS_OUTPUT, output))
             );
             Model model = new LinkedHashModel();
             try (var results = conn.prepareGraphQuery(query.getQueryString()).evaluate()) {
@@ -141,10 +141,11 @@ public class ThingActionAffordance {
             if (model.size() == 0) {
                 return Optional.empty();
             }
+            builder.processAll(model);
             return Optional.ofNullable(builder.build());
         }, this.context.getExecutor());
         return Mono.fromFuture(future)
-                .flatMap(maybeLatestInvocation -> maybeLatestInvocation.map(Mono::just).orElseGet(Mono::empty));
+                .flatMap(Mono::justOrEmpty);
     }
 
     public IRI getInputSchema() {
