@@ -47,13 +47,14 @@ ex:Heater_1
   td:hasPropertyAffordance ex:Heater_1_IndoorTemperature, ex:Heater_1_OutdoorTemperature, ex:Heater_1_PowerDemand ;
   td:hasActionAffordance ex:Heater_1_SetHeatingPowerAction.
 
-ex:Heater_1_SetHeatingPowerAcion
+ex:Heater_1_SetHeatingPowerAction
   a td:ActionAffordance, ex:SetCommand ;
   td:hasInputSchema ex:GenericSetHeatingPowerInput ;
-  td:describedBy ex:GenericSetHeatingPower.
+  tdx:describedBy ex:GenericSetHeatingPower.
 
 #ex:Heater_1_SetPowerInput_Invocation_1
 #  a tdx:ActionInvocation ;
+# tdx:describedByAffordance
 #  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
 #  tdx:hasInput "1000"^^xsd::double.
 
