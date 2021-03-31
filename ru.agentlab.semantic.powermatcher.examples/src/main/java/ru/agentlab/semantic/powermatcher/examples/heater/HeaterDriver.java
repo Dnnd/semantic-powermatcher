@@ -14,6 +14,7 @@ import org.flexiblepower.messaging.Port;
 import org.flexiblepower.ral.ext.AbstractResourceDriver;
 import org.osgi.service.component.annotations.*;
 import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -45,7 +46,6 @@ import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 @Component(
         immediate = true,
         service = {Endpoint.class},
-        name = "ru.agentlab.semantic.powermatcher.examples.heater.HeaterDriver",
         configurationPolicy = ConfigurationPolicy.REQUIRE)
 @Port(
         name = "manager",
@@ -69,6 +69,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     }
 
 
+    @ObjectClassDefinition(name = "Heater Semantic Driver")
     public @interface Config {
 
         String thingIRI();
