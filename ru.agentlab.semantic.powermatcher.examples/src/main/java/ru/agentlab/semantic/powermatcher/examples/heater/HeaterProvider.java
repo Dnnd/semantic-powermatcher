@@ -10,9 +10,8 @@ import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.*;
+import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
@@ -46,6 +45,12 @@ import static ru.agentlab.semantic.powermatcher.vocabularies.Example.*;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_INPUT;
 
+@Component(
+        service = {HeaterProvider.class},
+        configurationPolicy = ConfigurationPolicy.REQUIRE,
+        immediate = true
+)
+@Designate(ocd = HeaterSimulationConfig.class)
 public class HeaterProvider {
 
     private final Logger logger = LoggerFactory.getLogger(HeaterProvider.class);
