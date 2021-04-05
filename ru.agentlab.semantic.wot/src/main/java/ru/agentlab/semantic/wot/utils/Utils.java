@@ -3,6 +3,9 @@ package ru.agentlab.semantic.wot.utils;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import ru.agentlab.changetracking.filter.ChangetrackingFilter;
@@ -11,7 +14,9 @@ import ru.agentlab.changetracking.sail.TransactionChanges;
 import ru.agentlab.semantic.wot.observation.api.Observation;
 import ru.agentlab.semantic.wot.observation.api.ObservationFactory;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -78,5 +83,14 @@ public class Utils {
                         future.cancel(mayInterruptOnCancel);
                     }
                 });
+    }
+
+    public static void filterStatements(Iterable<Statement> statements, IRI targetIRI, Model target, List<IRI> types) {
+        for (var st : statements) {
+            target.add(st);
+            if (st.getPredicate().equals(RDF.TYPE)) {
+                types.add((IRI) st.getObject());
+            }
+        }
     }
 }

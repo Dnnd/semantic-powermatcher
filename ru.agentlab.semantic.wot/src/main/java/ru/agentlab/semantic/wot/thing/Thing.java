@@ -24,26 +24,10 @@ public class Thing {
     private final IRI thingIRI;
     private final Model model;
     private final List<IRI> types;
-    private final ConnectionContext context;
 
-    public static Thing of(IRI thingIRI, ConnectionContext context) {
-        Model model = new LinkedHashModel();
-        List<IRI> types = new ArrayList<>();
-
-        for (var st : context.getConnection().getStatements(thingIRI, null, null)) {
-            model.add(st);
-            if (st.getPredicate().equals(RDF.TYPE)) {
-                types.add((IRI) st.getObject());
-            }
-        }
-        return new Thing(thingIRI, types, model, context);
-
-    }
-
-    public Thing(IRI thingIRI, List<IRI> types, Model model, ConnectionContext context) {
+    public Thing(IRI thingIRI, List<IRI> types, Model model) {
         this.thingIRI = thingIRI;
         this.types = types;
-        this.context = context;
         this.model = model;
     }
 
@@ -54,62 +38,11 @@ public class Thing {
         return Optional.empty();
     }
 
-    public Mono<ThingActionAffordance> getActionAffordance(IRI propertyAffordance) {
-        var future = CompletableFuture.supplyAsync(
-                () -> ThingActionAffordance.of(thingIRI, propertyAffordance, context),
-                context.getExecutor()
-        );
-        return Mono.fromFuture(future).doOnCancel(() -> future.cancel(true));
-    }
-
-    public Mono<ThingPropertyAffordance> getPropertyAffordance(IRI propertyAffordance) {
-        var future = CompletableFuture.supplyAsync(
-                () -> ThingPropertyAffordance.of(thingIRI, propertyAffordance, context),
-                context.getExecutor()
-        );
-        return Mono.fromFuture(future).doOnCancel(() -> future.cancel(true));
-    }
-
-    public Flux<ThingPropertyAffordance> getPropertyAffordancesWithType(IRI... desiredAffordanceType) {
-        var propertyAffordances = CompletableFuture.supplyAsync(() -> {
-            Variable affordanceIRI = var("affordanceIRI");
-
-            GraphPattern pattern;
-            if (desiredAffordanceType == null || desiredAffordanceType.length == 0) {
-                pattern = tp(thingIRI, HAS_PROPERTY_AFFORDANCE, affordanceIRI);
-            } else {
-                pattern = tp(thingIRI, HAS_PROPERTY_AFFORDANCE, affordanceIRI)
-                        .and(tp(affordanceIRI, RDF.TYPE, desiredAffordanceType[0]));
-                for (int i = 1; i < desiredAffordanceType.length; ++i) {
-                    pattern = pattern.union(
-                            tp(thingIRI, HAS_PROPERTY_AFFORDANCE, affordanceIRI)
-                                    .and(tp(affordanceIRI, RDF.TYPE, desiredAffordanceType[1]))
-                    );
-                }
-            }
-            SelectQuery query = Queries.SELECT(affordanceIRI).where(pattern).distinct();
-
-            var prepared = context.getConnection().prepareTupleQuery(query.getQueryString());
-            return prepared.evaluate().stream().map(binding -> {
-                var foundIRI = (IRI) binding.getBinding("affordanceIRI").getValue();
-                return ThingPropertyAffordance.of(thingIRI, foundIRI, context);
-            });
-        }, context.getExecutor());
-
-        return Mono.fromFuture(propertyAffordances)
-                .doFinally(signal -> {
-                    if (signal.equals(SignalType.CANCEL)) {
-                        propertyAffordances.cancel(true);
-                    }
-                })
-                .flatMapMany(Flux::fromStream);
-    }
-
-    public ConnectionContext getContext() {
-        return context;
-    }
-
     public IRI getIRI() {
         return thingIRI;
+    }
+
+    public List<IRI> getTypes() {
+        return types;
     }
 }
