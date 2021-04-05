@@ -16,16 +16,12 @@ import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.semantic.wot.observation.api.Observation;
 import ru.agentlab.semantic.wot.observation.api.ObservationBuilder;
 import ru.agentlab.semantic.wot.observation.api.ObservationFactory;
-import ru.agentlab.semantic.wot.observations.DefaultObservationMetadata;
-import ru.agentlab.semantic.wot.observations.FloatObservation;
 import ru.agentlab.semantic.wot.utils.Utils;
 
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.select;
@@ -78,27 +74,31 @@ public class ThingPropertyAffordance {
     }
 
     public <T, M> Mono<Observation<T, M>> latestObservation(ObservationBuilder<T, M> builder) {
+        return Utils.supplyAsyncWithCancel(
+                () -> latestObservationSync(builder),
+                context.getExecutor()
+        );
+    }
+
+    public <T, M> Observation<T, M> latestObservationSync(ObservationBuilder<T, M> builder) {
         var conn = this.context.getConnection();
-        var future = CompletableFuture.supplyAsync(() -> {
-            Variable mostRecent = var("mostRecent");
-            Variable lastModified = var("lastModified");
-            Variable obs = var("obs");
-            Variable value = var("value");
-            var query = Queries.CONSTRUCT(
-                    tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
-                    tp(obs, MODIFIED, mostRecent),
-                    tp(obs, HAS_VALUE, value)
-            ).where(select(obs, Expressions.max(lastModified).as(mostRecent))
-                            .where(tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
-                                   tp(obs, MODIFIED, lastModified)
-                            )
-                            .groupBy(obs),
-                    tp(obs, HAS_VALUE, value)
-            );
-            conn.prepareGraphQuery(query.getQueryString()).evaluate().forEach(builder::process);
-            return builder.build();
-        }, this.context.getExecutor());
-        return Mono.fromFuture(future);
+        Variable mostRecent = var("mostRecent");
+        Variable lastModified = var("lastModified");
+        Variable obs = var("obs");
+        Variable value = var("value");
+        var query = Queries.CONSTRUCT(
+                tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
+                tp(obs, MODIFIED, mostRecent),
+                tp(obs, HAS_VALUE, value)
+        ).where(select(obs, Expressions.max(lastModified).as(mostRecent))
+                        .where(tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
+                               tp(obs, MODIFIED, lastModified)
+                        )
+                        .groupBy(obs),
+                tp(obs, HAS_VALUE, value)
+        );
+        conn.prepareGraphQuery(query.getQueryString()).evaluate().forEach(builder::process);
+        return builder.build();
     }
 
     public <T, M> Flux<Observation<T, M>> subscribeOnLatestObservations(ObservationFactory<T, M> observationFactory,

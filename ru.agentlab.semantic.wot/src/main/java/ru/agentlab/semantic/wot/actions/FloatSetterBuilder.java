@@ -1,4 +1,4 @@
-package ru.agentlab.semantic.wot.observations;
+package ru.agentlab.semantic.wot.actions;
 
 import org.eclipse.rdf4j.model.Statement;
 import ru.agentlab.semantic.wot.observation.api.Action;

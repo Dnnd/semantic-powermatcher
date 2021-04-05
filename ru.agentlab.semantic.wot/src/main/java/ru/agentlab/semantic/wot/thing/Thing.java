@@ -9,16 +9,15 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.tp;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_ACTION_AFFORDANCE;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_PROPERTY_AFFORDANCE;
 
 public class Thing {
@@ -60,7 +59,7 @@ public class Thing {
                 () -> ThingActionAffordance.of(thingIRI, propertyAffordance, context),
                 context.getExecutor()
         );
-        return Mono.fromFuture(future);
+        return Mono.fromFuture(future).doOnCancel(() -> future.cancel(true));
     }
 
     public Mono<ThingPropertyAffordance> getPropertyAffordance(IRI propertyAffordance) {
@@ -68,7 +67,7 @@ public class Thing {
                 () -> ThingPropertyAffordance.of(thingIRI, propertyAffordance, context),
                 context.getExecutor()
         );
-        return Mono.fromFuture(future);
+        return Mono.fromFuture(future).doOnCancel(() -> future.cancel(true));
     }
 
     public Flux<ThingPropertyAffordance> getPropertyAffordancesWithType(IRI... desiredAffordanceType) {
@@ -97,7 +96,13 @@ public class Thing {
             });
         }, context.getExecutor());
 
-        return Mono.fromFuture(propertyAffordances).flatMapMany(Flux::fromStream);
+        return Mono.fromFuture(propertyAffordances)
+                .doFinally(signal -> {
+                    if (signal.equals(SignalType.CANCEL)) {
+                        propertyAffordances.cancel(true);
+                    }
+                })
+                .flatMapMany(Flux::fromStream);
     }
 
     public ConnectionContext getContext() {

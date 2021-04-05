@@ -12,13 +12,12 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import reactor.core.publisher.Mono;
 import ru.agentlab.semantic.wot.observation.api.Action;
 import ru.agentlab.semantic.wot.observation.api.ActionBuilder;
+import ru.agentlab.semantic.wot.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
-import static org.eclipse.rdf4j.model.util.Values.iri;
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.*;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
@@ -111,41 +110,45 @@ public class ThingActionAffordance {
         this.thingIRI = thingIRI;
     }
 
+
     public <I, O, M> Mono<Action<I, O, M>> latestInvocation(ActionBuilder<I, O, M> builder) {
+        return Utils.supplyAsyncWithCancel(
+                () -> latestInvocationSync(builder),
+                context.getExecutor()
+        ).flatMap(Mono::justOrEmpty);
+    }
+
+    public <I, O, M> Optional<Action<I, O, M>> latestInvocationSync(ActionBuilder<I, O, M> builder) {
         var conn = this.context.getConnection();
-        CompletableFuture<Optional<Action<I, O, M>>> future = CompletableFuture.supplyAsync(() -> {
-            Variable mostRecent = var("mostRecent");
-            Variable lastModified = var("lastModified");
-            Variable invocation = var("invocation");
-            Variable output = var("output");
-            Variable input = var("input");
-            var query = Queries.CONSTRUCT(
-                    tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
-                    tp(invocation, MODIFIED, mostRecent),
-                    tp(invocation, HAS_INPUT, input),
-                    tp(invocation, HAS_OUTPUT, output)
-            ).where(
-                    select(Expressions.max(lastModified).as(mostRecent)).where(
-                            tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
-                            tp(invocation, MODIFIED, lastModified)
-                    ),
-                    tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
-                    tp(invocation, MODIFIED, mostRecent),
-                    optional(tp(invocation, HAS_INPUT, input)),
-                    optional(tp(invocation, HAS_OUTPUT, output))
-            );
-            Model model = new LinkedHashModel();
-            try (var results = conn.prepareGraphQuery(query.getQueryString()).evaluate()) {
-                results.forEach(model::add);
-            }
-            if (model.size() == 0) {
-                return Optional.empty();
-            }
-            builder.processAll(model);
-            return Optional.ofNullable(builder.build());
-        }, this.context.getExecutor());
-        return Mono.fromFuture(future)
-                .flatMap(Mono::justOrEmpty);
+        Variable mostRecent = var("mostRecent");
+        Variable lastModified = var("lastModified");
+        Variable invocation = var("invocation");
+        Variable output = var("output");
+        Variable input = var("input");
+        var query = Queries.CONSTRUCT(
+                tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
+                tp(invocation, MODIFIED, mostRecent),
+                tp(invocation, HAS_INPUT, input),
+                tp(invocation, HAS_OUTPUT, output)
+        ).where(
+                select(Expressions.max(lastModified).as(mostRecent)).where(
+                        tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
+                        tp(invocation, MODIFIED, lastModified)
+                ),
+                tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
+                tp(invocation, MODIFIED, mostRecent),
+                optional(tp(invocation, HAS_INPUT, input)),
+                optional(tp(invocation, HAS_OUTPUT, output))
+        );
+        Model model = new LinkedHashModel();
+        try (var results = conn.prepareGraphQuery(query.getQueryString()).evaluate()) {
+            results.forEach(model::add);
+        }
+        if (model.size() == 0) {
+            return Optional.empty();
+        }
+        builder.processAll(model);
+        return Optional.ofNullable(builder.build());
     }
 
     public IRI getInputSchema() {

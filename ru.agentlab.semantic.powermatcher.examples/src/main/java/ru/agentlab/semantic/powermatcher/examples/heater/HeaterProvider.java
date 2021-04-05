@@ -23,6 +23,7 @@ import ru.agentlab.changetracking.filter.Transformations;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.changetracking.sail.TransactionChanges;
 import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
+import ru.agentlab.semantic.wot.actions.FloatSetterBuilder;
 import ru.agentlab.semantic.wot.observation.api.Action;
 import ru.agentlab.semantic.wot.observation.api.Observation;
 import ru.agentlab.semantic.wot.observations.*;
@@ -30,13 +31,13 @@ import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingActionAffordance;
 import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
+import ru.agentlab.semantic.wot.utils.Utils;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -122,6 +123,7 @@ public class HeaterProvider {
                         logger.info("updating heater model state, power={}", setPowerCommand.getInput());
                         var model = state.getModel();
                         model.setHeatingPower(setPowerCommand.getInput());
+                        model.calculate(interval);
                     }).then(publishNewState(state));
                 });
     }
@@ -142,42 +144,50 @@ public class HeaterProvider {
     }
 
     private Mono<Void> publishNewState(HeaterSimulationTwin state) {
-        var context = state.getIndoor().getContext();
-        var future = CompletableFuture.runAsync(() -> {
-            var conn = context.getConnection();
-            logger.info("publishing new state={}", state);
-            Model indoorTemperatureObservation = makeFloatObservation(
-                    state.getIndoor(),
-                    state.getModel().getIndoorTemperature()
-            );
-            Model outdoorTemperatureObservation = makeFloatObservation(
-                    state.getIndoor(),
-                    state.getModel().getOutdoorTemperature()
-            );
-            Model heatingPowerObservation = makeFloatObservation(
-                    state.getIndoor(),
-                    state.getModel().getHeatingPower()
-            );
-            conn.begin();
-            conn.add(indoorTemperatureObservation);
-            conn.add(outdoorTemperatureObservation);
-            conn.add(heatingPowerObservation);
-            conn.commit();
-        }, context.getExecutor());
-        return Mono.fromFuture(future);
+        return Utils.supplyAsyncWithCancel(
+                () -> publishNewStateSync(state),
+                state.getIndoor().getContext().getExecutor()
+        );
     }
 
     private Mono<Thing> populateThingModel(IRI thingIRI, ConnectionContext context) {
-        var future = CompletableFuture.supplyAsync(() -> {
-            try (var uncontrolledTTL = getClass().getClassLoader().getResourceAsStream("heater.ttl")) {
-                var model = Rio.parse(uncontrolledTTL, RDFFormat.TURTLE);
-                context.getConnection().add(model);
-            } catch (IOException exception) {
-                logger.error("unable to populate thing model", exception);
-            }
-            return Thing.of(thingIRI, context);
-        }, context.getExecutor());
-        return Mono.fromFuture(future);
+        return Utils.supplyAsyncWithCancel(
+                () -> populateThingModelSync(thingIRI, context),
+                context.getExecutor()
+        );
+    }
+
+    private void publishNewStateSync(HeaterSimulationTwin state) {
+        var context = state.getIndoor().getContext();
+        var conn = context.getConnection();
+        logger.info("publishing new state={}", state);
+        Model indoorTemperatureObservation = makeFloatObservation(
+                state.getIndoor(),
+                state.getModel().getIndoorTemperature()
+        );
+        Model outdoorTemperatureObservation = makeFloatObservation(
+                state.getIndoor(),
+                state.getModel().getOutdoorTemperature()
+        );
+        Model heatingPowerObservation = makeFloatObservation(
+                state.getIndoor(),
+                state.getModel().getHeatingPower()
+        );
+        conn.begin();
+        conn.add(indoorTemperatureObservation);
+        conn.add(outdoorTemperatureObservation);
+        conn.add(heatingPowerObservation);
+        conn.commit();
+    }
+
+    private Thing populateThingModelSync(IRI thingIRI, ConnectionContext context) {
+        try (var uncontrolledTTL = getClass().getClassLoader().getResourceAsStream("heater.ttl")) {
+            var model = Rio.parse(uncontrolledTTL, RDFFormat.TURTLE);
+            context.getConnection().add(model);
+        } catch (IOException exception) {
+            logger.error("unable to populate thing model", exception);
+        }
+        return Thing.of(thingIRI, context);
     }
 
     private Mono<HeaterSimulationTwin> fetchInitialState(Thing thing) {
