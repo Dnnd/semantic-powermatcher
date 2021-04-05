@@ -17,7 +17,6 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.observation.api.Observation;
@@ -25,6 +24,9 @@ import ru.agentlab.semantic.wot.observation.api.ObservationFactory;
 import ru.agentlab.semantic.wot.observations.DefaultMetadataBuilder;
 import ru.agentlab.semantic.wot.observations.DefaultObservationMetadata;
 import ru.agentlab.semantic.wot.observations.FloatObservationBuilder;
+import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
+import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
+import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingActionAffordance;
@@ -35,7 +37,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -61,8 +62,10 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     private final ObservationFactory<Float, DefaultObservationMetadata> floatObservationsFactory;
     private Disposable onStateUpdateSubscription;
     private final Sinks.Many<Double> setPowerSink = Sinks.many().unicast().onBackpressureBuffer();
-    private Disposable onControlParametersReceivied;
+    private Disposable onControlParametersReceived;
     private ConnectionContext context;
+    private ThingPropertyAffordanceRepository propertyAffordances;
+    private ThingActionAffordanceRepository actionAffordances;
 
     public HeaterDriver() {
         floatObservationsFactory = (obsIri) -> new FloatObservationBuilder<>(new DefaultMetadataBuilder(obsIri));
@@ -85,14 +88,15 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
         var repoConn = repository.getConnection();
         context = new ConnectionContext(executor, repoConn);
         var thingIRI = iri(config.thingIRI());
-        var thingMono = discoverThing(thingIRI, context).cache();
+        var things = new ThingRepository(context);
+        propertyAffordances = new ThingPropertyAffordanceRepository(context);
+        actionAffordances = new ThingActionAffordanceRepository(context);
 
-        onControlParametersReceivied = thingMono.flatMap(thing -> Mono.fromFuture(CompletableFuture.supplyAsync(
-                () -> ThingActionAffordance.byDescription(
-                        thing.getIRI(),
-                        iri("https://example.agentlab.ru/#GenericSetHeatingPower"),
-                        context
-                ), context.getExecutor())
+        var thingMono = things.getThing(thingIRI).cache();
+
+        onControlParametersReceived = thingMono.flatMap(thing -> actionAffordances.byDescription(
+                thing,
+                iri("https://example.agentlab.ru/#GenericSetHeatingPower")
         )).flatMapMany(actionAffordance -> setPowerSink.asFlux().doOnNext(powerToSet -> {
             var setter = serializeFloatSetter(actionAffordance, powerToSet);
             repoConn.add(setter);
@@ -106,7 +110,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     @Deactivate
     public void deactivate() {
         onStateUpdateSubscription.dispose();
-        onControlParametersReceivied.dispose();
+        onControlParametersReceived.dispose();
         try {
             setPowerSink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
         } catch (Exception e) {
@@ -126,13 +130,9 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
         }
     }
 
-    private Mono<Thing> discoverThing(IRI thingIRI, ConnectionContext ctx) {
-        var future = CompletableFuture.supplyAsync(() -> Thing.of(thingIRI, ctx), ctx.getExecutor());
-        return Mono.fromFuture(future);
-    }
-
     private Flux<HeaterResourceState> subscribeOnHeaterStateUpdates(Thing heater) {
-        return heater.getPropertyAffordancesWithType(TEMPERATURE, POWER)
+
+        return propertyAffordances.getPropertyAffordancesWithType(heater, TEMPERATURE, POWER)
                 .filter(affordance -> affordance.getProperty(LOCATION_TYPE)
                         .map(locationType -> locationType.equals(INSIDE))
                         .orElse(true))
@@ -158,19 +158,23 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
                 (Observation<Float, DefaultObservationMetadata> obs) -> obs.getMetadata().getLastModified()
         );
 
-        var heatingPowerUpdates = heatingPower.latestObservation(floatObservationsFactory)
-                .concatWith(heatingPower.subscribeOnLatestObservations(
+        var heatingPowerUpdates = propertyAffordances.latestObservation(heatingPower, floatObservationsFactory)
+                .concatWith(propertyAffordances.subscribeOnLatestObservations(
+                        heatingPower,
                         floatObservationsFactory,
                         lastModifiedComparator
                 ));
 
-        return indoorTemperature.subscribeOnLatestObservations(floatObservationsFactory, lastModifiedComparator)
-                .withLatestFrom(heatingPowerUpdates,
-                                (temperatureObservation, heatingPowerObservation) -> new HeaterResourceState(
-                                        temperatureObservation.getValue(),
-                                        heatingPowerObservation.getValue()
-                                )
-                );
+        return propertyAffordances.subscribeOnLatestObservations(
+                indoorTemperature,
+                floatObservationsFactory,
+                lastModifiedComparator
+        ).withLatestFrom(heatingPowerUpdates,
+                         (temperatureObservation, heatingPowerObservation) -> new HeaterResourceState(
+                                 temperatureObservation.getValue(),
+                                 heatingPowerObservation.getValue()
+                         )
+        );
     }
 
     private Model serializeFloatSetter(ThingActionAffordance affordance, double value) {

@@ -2,14 +2,11 @@ package ru.agentlab.semantic.powermatcher.examples.heater;
 
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.config.SailRegistry;
-import org.flexiblepower.manager.heater.api.HeaterControlParameters;
 import org.junit.jupiter.api.Test;
 import ru.agentlab.changetracking.sail.ChangeTrackingFactory;
 import ru.agentlab.changetracking.utils.EmbeddedChangetrackingRepo;
 
-import javax.measure.Measurable;
 import javax.measure.Measure;
-import javax.measure.quantity.Power;
 import javax.measure.unit.SI;
 import java.io.IOException;
 import java.lang.annotation.Annotation;

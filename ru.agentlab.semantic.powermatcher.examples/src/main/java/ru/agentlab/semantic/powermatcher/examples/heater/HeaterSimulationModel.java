@@ -3,11 +3,6 @@ package ru.agentlab.semantic.powermatcher.examples.heater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.measure.Measurable;
-import javax.measure.Measure;
-import javax.measure.quantity.Power;
-import javax.measure.quantity.Temperature;
-import javax.measure.unit.SI;
 import java.time.Duration;
 
 public class HeaterSimulationModel {

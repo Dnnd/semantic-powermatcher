@@ -27,6 +27,9 @@ import ru.agentlab.semantic.wot.actions.FloatSetterBuilder;
 import ru.agentlab.semantic.wot.observation.api.Action;
 import ru.agentlab.semantic.wot.observation.api.Observation;
 import ru.agentlab.semantic.wot.observations.*;
+import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
+import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
+import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingActionAffordance;
@@ -57,6 +60,9 @@ public class HeaterProvider {
     private final Logger logger = LoggerFactory.getLogger(HeaterProvider.class);
     private final ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private SailRepository repository;
+    private ThingRepository things;
+    private ThingPropertyAffordanceRepository propertyAffordances;
+    private ThingActionAffordanceRepository actionAffordances;
     private Disposable subscription;
 
     @Reference
@@ -70,10 +76,14 @@ public class HeaterProvider {
         var repoConn = repository.getConnection();
         var sailConn = (ChangeTrackerConnection) repoConn.getSailConnection();
         var context = new ConnectionContext(executor, repoConn);
+        things = new ThingRepository(context);
+        propertyAffordances = new ThingPropertyAffordanceRepository(context);
+        actionAffordances = new ThingActionAffordanceRepository(context);
 
-        subscription = populateThingModel(iri(config.thingIRI()), context)
+        subscription = populateThingModel(context)
+                .then(things.getThing(iri(config.thingIRI())))
                 .flatMap(this::fetchInitialState)
-                .flatMapMany(state -> scheduleSimulation(state, interval))
+                .flatMapMany(state -> scheduleSimulation(context, state, interval))
                 .doFinally(signal -> {
                     sailConn.close();
                     repoConn.close();
@@ -111,20 +121,25 @@ public class HeaterProvider {
         return new Building(len, width, height);
     }
 
-    private Flux<Void> scheduleSimulation(HeaterSimulationTwin state, Duration interval) {
-        return Flux.interval(interval, Schedulers.fromExecutor(state.getIndoor().getContext().getExecutor()))
+    private Flux<Void> scheduleSimulation(ConnectionContext context, HeaterSimulationTwin state, Duration interval) {
+        logger.info("Launching simulation...");
+        return Flux.interval(interval, Schedulers.fromExecutor(context.getExecutor()))
                 .flatMap(tick -> {
+                    logger.info("heater simulation tick {}", tick);
                     ThingActionAffordance setPowerAffordance = state.getSetPowerAffordance();
                     var metadataBuilder = new DefaultActionMetadataBuilder(setPowerAffordance.getIRI());
                     var actionBuilder = new FloatSetterBuilder<>(metadataBuilder);
 
-                    var latestInvocation = setPowerAffordance.latestInvocation(actionBuilder);
+                    var latestInvocation = actionAffordances.latestInvocation(
+                            setPowerAffordance.getIRI(),
+                            actionBuilder
+                    );
                     return latestInvocation.doOnNext(setPowerCommand -> {
                         logger.info("updating heater model state, power={}", setPowerCommand.getInput());
                         var model = state.getModel();
                         model.setHeatingPower(setPowerCommand.getInput());
                         model.calculate(interval);
-                    }).then(publishNewState(state));
+                    }).then(publishNewState(context, state));
                 });
     }
 
@@ -143,22 +158,21 @@ public class HeaterProvider {
         return model;
     }
 
-    private Mono<Void> publishNewState(HeaterSimulationTwin state) {
+    private Mono<Void> publishNewState(ConnectionContext context, HeaterSimulationTwin state) {
         return Utils.supplyAsyncWithCancel(
-                () -> publishNewStateSync(state),
-                state.getIndoor().getContext().getExecutor()
-        );
-    }
-
-    private Mono<Thing> populateThingModel(IRI thingIRI, ConnectionContext context) {
-        return Utils.supplyAsyncWithCancel(
-                () -> populateThingModelSync(thingIRI, context),
+                () -> publishNewStateSync(context, state),
                 context.getExecutor()
         );
     }
 
-    private void publishNewStateSync(HeaterSimulationTwin state) {
-        var context = state.getIndoor().getContext();
+    private Mono<Void> populateThingModel(ConnectionContext context) {
+        return Utils.supplyAsyncWithCancel(
+                () -> populateThingModelSync(context),
+                context.getExecutor()
+        );
+    }
+
+    private void publishNewStateSync(ConnectionContext context, HeaterSimulationTwin state) {
         var conn = context.getConnection();
         logger.info("publishing new state={}", state);
         Model indoorTemperatureObservation = makeFloatObservation(
@@ -180,14 +194,14 @@ public class HeaterProvider {
         conn.commit();
     }
 
-    private Thing populateThingModelSync(IRI thingIRI, ConnectionContext context) {
+    private void populateThingModelSync(ConnectionContext context) {
         try (var uncontrolledTTL = getClass().getClassLoader().getResourceAsStream("heater.ttl")) {
             var model = Rio.parse(uncontrolledTTL, RDFFormat.TURTLE);
             context.getConnection().add(model);
         } catch (IOException exception) {
             logger.error("unable to populate thing model", exception);
         }
-        return Thing.of(thingIRI, context);
+        logger.info("Thing Model successfully populated...");
     }
 
     private Mono<HeaterSimulationTwin> fetchInitialState(Thing thing) {
@@ -195,10 +209,22 @@ public class HeaterProvider {
         IRI outsideTemperatureIRI = iri("https://example.agentlab.ru/#Heater_1_OutdoorTemperature");
         IRI insideTemperatureIRI = iri("https://example.agentlab.ru/#Heater_1_IndoorTemperature");
         IRI setPowerActionIRI = iri("https://example.agentlab.ru/#Heater_1_SetHeatingPowerAction");
-        var powerAffordanceMono = thing.getPropertyAffordance(powerAffordanceIRI);
-        var outsideTemperatureMono = thing.getPropertyAffordance(outsideTemperatureIRI);
-        var insideTemperatureMono = thing.getPropertyAffordance(insideTemperatureIRI);
-        var actionAffordanceMono = thing.getActionAffordance(setPowerActionIRI);
+        var powerAffordanceMono = propertyAffordances.getThingPropertyAffordance(
+                thing,
+                powerAffordanceIRI
+        );
+        var outsideTemperatureMono = propertyAffordances.getThingPropertyAffordance(
+                thing,
+                outsideTemperatureIRI
+        );
+        var insideTemperatureMono = propertyAffordances.getThingPropertyAffordance(
+                thing,
+                insideTemperatureIRI
+        );
+        var actionAffordanceMono = actionAffordances.getActionAffordance(
+                thing,
+                setPowerActionIRI
+        );
 
         Building building = fetchLocationBuilding(thing);
         return Mono.zip(powerAffordanceMono, outsideTemperatureMono, insideTemperatureMono, actionAffordanceMono)
@@ -253,7 +279,7 @@ public class HeaterProvider {
     private Mono<Observation<Float, DefaultObservationMetadata>> fromAffordance(ThingPropertyAffordance affordance) {
         DefaultMetadataBuilder metadataBuilder = new DefaultMetadataBuilder();
         var observationBuilder = new FloatObservationBuilder<>(metadataBuilder);
-        return affordance.latestObservation(observationBuilder);
+        return propertyAffordances.latestObservation(affordance.getIRI(), observationBuilder);
     }
 
     @Deactivate

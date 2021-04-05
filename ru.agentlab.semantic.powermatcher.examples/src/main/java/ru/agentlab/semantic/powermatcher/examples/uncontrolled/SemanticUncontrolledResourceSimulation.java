@@ -17,19 +17,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
+import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
+import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
-import ru.agentlab.semantic.wot.thing.Thing;
+import ru.agentlab.semantic.wot.utils.Utils;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -44,7 +44,6 @@ import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 )
 @Designate(ocd = SemanticUncontrolledResourceSimulation.Config.class)
 public class SemanticUncontrolledResourceSimulation {
-    private Config config;
     private static final Logger logger = LoggerFactory.getLogger(SemanticUncontrolledResourceSimulation.class);
     private UniformRealDistribution random;
     private final Scheduler scheduler = Schedulers.newSingle(SemanticUncontrolledResourceSimulation.class.getName());
@@ -71,13 +70,16 @@ public class SemanticUncontrolledResourceSimulation {
     @Activate
     public void activate(Config config) {
         logger.info("Starting semantic uncontrolled resource simulation...");
-        this.config = config;
         random = new UniformRealDistribution(config.from(), config.to());
         SailRepositoryConnection connection = repository.getConnection();
         ChangeTrackerConnection sailConn = (ChangeTrackerConnection) connection.getSailConnection();
         ConnectionContext ctx = new ConnectionContext(executor, connection);
-        subscription = Mono.fromFuture(CompletableFuture.supplyAsync(() -> populateThingModel(ctx)))
-                .flatMapMany(thing -> thing.getPropertyAffordancesWithType(POWER))
+        var thingRepository = new ThingRepository(ctx);
+        var propertyAffordanceRepository = new ThingPropertyAffordanceRepository(ctx);
+
+        subscription = Utils.supplyAsyncWithCancel(() -> populateThingModel(ctx), ctx.getExecutor())
+                .then(thingRepository.getThing(iri(config.thingIRI())))
+                .flatMapMany(thing -> propertyAffordanceRepository.getPropertyAffordancesWithType(thing, POWER))
                 .flatMap(affordance -> Flux.interval(Duration.ofMillis(config.intervalMsec()), scheduler)
                         .map(sec -> affordance))
                 .doFinally(ev -> {
@@ -93,14 +95,13 @@ public class SemanticUncontrolledResourceSimulation {
         this.subscription.dispose();
     }
 
-    private Thing populateThingModel(ConnectionContext ctx) {
+    private void populateThingModel(ConnectionContext ctx) {
         try (var uncontrolledTTL = getClass().getClassLoader().getResourceAsStream("uncontrolled.ttl")) {
             var model = Rio.parse(uncontrolledTTL, RDFFormat.TURTLE);
             ctx.getConnection().add(model);
         } catch (IOException exception) {
             logger.error("unable to populate thing model", exception);
         }
-        return Thing.of(iri(config.thingIRI()), ctx);
     }
 
     private void publishNewState(double currentValue, IRI powerAffordanceIRI, RepositoryConnection conn) {

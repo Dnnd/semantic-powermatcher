@@ -21,11 +21,12 @@ import ru.agentlab.changetracking.filter.Transformations;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.changetracking.sail.TransactionChanges;
 import ru.agentlab.semantic.wot.observation.api.Observation;
-import ru.agentlab.semantic.wot.observations.DefaultObservationMetadata;
 import ru.agentlab.semantic.wot.observations.DefaultMetadataBuilder;
+import ru.agentlab.semantic.wot.observations.DefaultObservationMetadata;
 import ru.agentlab.semantic.wot.observations.FloatObservationBuilder;
+import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
+import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
-import ru.agentlab.semantic.wot.thing.Thing;
 
 import javax.measure.Measurable;
 import javax.measure.Measure;
@@ -53,7 +54,6 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Scheduler scheduler = Schedulers.fromExecutorService(executor);
     private Disposable subscription;
-
 
     @ObjectClassDefinition(
             id = "ru.agentlab.semantic.powermatcher.UncontrolledSemanticResourceDriver",
@@ -101,11 +101,11 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
         SailRepositoryConnection conn = repository.getConnection();
         ChangeTrackerConnection sailConn = (ChangeTrackerConnection) conn.getSailConnection();
         var ctx = new ConnectionContext(executor, conn);
-        Thing thing = Thing.of(iri(config.thingIRI()), ctx);
+        var thingRepository = new ThingRepository(ctx);
+        var propertyAffordanceRepository = new ThingPropertyAffordanceRepository(ctx);
 
-        this.subscription = thing.getPropertyAffordancesWithType()
-                .doOnNext(prop -> logger.info(prop.toString()))
-                .filter(prop -> prop.hasType(POWER))
+        this.subscription = thingRepository.getThing(iri(config.thingIRI()))
+                .flatMapMany(thing -> propertyAffordanceRepository.getPropertyAffordancesWithType(thing, POWER))
                 .flatMap(powerProp -> {
                     logger.info("observing {}", powerProp.getIRI());
                     var powerPropObservationFilter = createObservationFilterForProperty(powerProp.getIRI());
@@ -113,6 +113,8 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
                             .flatMap(changes -> extractLatestObservation(changes, powerPropObservationFilter));
                 })
                 .doFinally(signal -> {
+                    thingRepository.cancel();
+                    propertyAffordanceRepository.cancel();
                     sailConn.close();
                     conn.close();
                 })
