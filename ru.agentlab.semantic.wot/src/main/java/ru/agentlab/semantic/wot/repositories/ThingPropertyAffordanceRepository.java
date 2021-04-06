@@ -52,7 +52,7 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
                 for (int i = 1; i < desiredAffordanceType.length; ++i) {
                     pattern = pattern.union(
                             tp(thingIRI, HAS_PROPERTY_AFFORDANCE, affordanceIRI)
-                                    .and(tp(affordanceIRI, RDF.TYPE, desiredAffordanceType[1]))
+                                    .and(tp(affordanceIRI, RDF.TYPE, desiredAffordanceType[i]))
                     );
                 }
             }
@@ -85,26 +85,31 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
         );
     }
 
-    public <T, M> Mono<Observation<T, M>> latestObservation(ThingPropertyAffordance propertyAffordance, ObservationFactory<T, M> observationFactory) {
+    public <T, M> Mono<Observation<T, M>> latestObservation(ThingPropertyAffordance propertyAffordance,
+                                                            ObservationFactory<T, M> observationFactory) {
         return latestObservation(propertyAffordance.getIRI(), observationFactory);
     }
 
-    public <T, M> Mono<Observation<T, M>> latestObservation(IRI propertyAffordanceIRI, ObservationFactory<T, M> observationFactory) {
+    public <T, M> Mono<Observation<T, M>> latestObservation(IRI propertyAffordanceIRI,
+                                                            ObservationFactory<T, M> observationFactory) {
         return latestObservation(propertyAffordanceIRI, observationFactory.createObservationBuilder(null));
     }
 
-    public <T, M> Mono<Observation<T, M>> latestObservation(ThingPropertyAffordance propertyAffordance, ObservationBuilder<T, M> builder) {
+    public <T, M> Mono<Observation<T, M>> latestObservation(ThingPropertyAffordance propertyAffordance,
+                                                            ObservationBuilder<T, M> builder) {
         return latestObservation(propertyAffordance.getIRI(), builder);
     }
 
-    public <T, M> Mono<Observation<T, M>> latestObservation(IRI propertyAffordanceIRI, ObservationBuilder<T, M> builder) {
+    public <T, M> Mono<Observation<T, M>> latestObservation(IRI propertyAffordanceIRI,
+                                                            ObservationBuilder<T, M> builder) {
         return Utils.supplyAsyncWithCancel(
                 () -> latestObservationSync(propertyAffordanceIRI, builder),
                 context.getExecutor()
         );
     }
 
-    public <T, M> Observation<T, M> latestObservationSync(IRI propertyAffordanceIRI, ObservationBuilder<T, M> builder) {
+    public <T, M> Observation<T, M> latestObservationSync(IRI propertyAffordanceIRI,
+                                                          ObservationBuilder<T, M> builder) {
         var conn = this.context.getConnection();
         Variable mostRecent = var("mostRecent");
         Variable lastModified = var("lastModified");
