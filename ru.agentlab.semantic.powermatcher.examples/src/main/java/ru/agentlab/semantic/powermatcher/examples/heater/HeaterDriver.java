@@ -58,7 +58,7 @@ import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterControlParameters> {
 
     private SailRepository repository;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
     private final ObservationFactory<Float, DefaultObservationMetadata> floatObservationsFactory;
     private Disposable onStateUpdateSubscription;
     private final Sinks.Many<Double> setPowerSink = Sinks.many().unicast().onBackpressureBuffer();
@@ -85,6 +85,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
 
     @Activate
     public void activate(Config config) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
         var repoConn = repository.getConnection();
         context = new ConnectionContext(executor, repoConn);
         var thingIRI = iri(config.thingIRI());

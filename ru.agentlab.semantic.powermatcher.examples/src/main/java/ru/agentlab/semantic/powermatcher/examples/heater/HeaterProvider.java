@@ -18,14 +18,10 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import ru.agentlab.changetracking.filter.ChangetrackingFilter;
-import ru.agentlab.changetracking.filter.Transformations;
-import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
-import ru.agentlab.changetracking.sail.TransactionChanges;
 import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.actions.FloatSetterBuilder;
-import ru.agentlab.semantic.wot.observation.api.Action;
 import ru.agentlab.semantic.wot.observation.api.Observation;
+import ru.agentlab.semantic.wot.observation.api.ObservationFactory;
 import ru.agentlab.semantic.wot.observations.*;
 import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
@@ -40,14 +36,13 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.*;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_INPUT;
 
 @Component(
         service = {HeaterProvider.class},
@@ -58,12 +53,10 @@ import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_INPUT;
 public class HeaterProvider {
 
     private final Logger logger = LoggerFactory.getLogger(HeaterProvider.class);
-    private final ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
     private SailRepository repository;
-    private ThingRepository things;
-    private ThingPropertyAffordanceRepository propertyAffordances;
-    private ThingActionAffordanceRepository actionAffordances;
     private Disposable subscription;
+    private ConnectionContext context;
 
     @Reference
     public void bindSailRepository(SailRepositoryProvider repositoryProvider) {
@@ -72,46 +65,20 @@ public class HeaterProvider {
 
     @Activate
     public void activate(HeaterSimulationConfig config) {
+        ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         var interval = Duration.ofMillis(config.updateFrequency());
         var repoConn = repository.getConnection();
-        var sailConn = (ChangeTrackerConnection) repoConn.getSailConnection();
-        var context = new ConnectionContext(executor, repoConn);
-        things = new ThingRepository(context);
-        propertyAffordances = new ThingPropertyAffordanceRepository(context);
-        actionAffordances = new ThingActionAffordanceRepository(context);
+        context = new ConnectionContext(executor, repoConn);
+        ThingRepository things = new ThingRepository(context);
+        var propertyAffordances = new ThingPropertyAffordanceRepository(context);
+        var actionAffordances = new ThingActionAffordanceRepository(context);
 
         subscription = populateThingModel(context)
                 .then(things.getThing(iri(config.thingIRI())))
-                .flatMap(this::fetchInitialState)
-                .flatMapMany(state -> scheduleSimulation(context, state, interval))
-                .doFinally(signal -> {
-                    sailConn.close();
-                    repoConn.close();
-                })
+                .flatMap(thing -> fetchInitialState(thing, propertyAffordances, actionAffordances))
+                .flatMapMany(state -> scheduleSimulation(context, actionAffordances, state, interval))
+                .doFinally(signal -> context.close())
                 .subscribe();
-    }
-
-    private Mono<Action<Float, Void, DefaultActionMetadata>> extractLatestInvocation(TransactionChanges changes, ChangetrackingFilter setPowerInvocationFilter) {
-        Map<IRI, Model> modelsBySubject = Transformations.groupBySubject(changes.getAddedStatements());
-        return modelsBySubject.entrySet()
-                .stream()
-                .flatMap(entity -> {
-                    IRI invocationIRI = entity.getKey();
-                    Model invocationModel = entity.getValue();
-                    return setPowerInvocationFilter.matchModel(invocationModel)
-                            .map(model -> createInvocation(invocationIRI, invocationModel))
-                            .stream();
-                })
-                .max(Comparator.comparing(observation -> observation.getMetadata().getLastModified()))
-                .map(Mono::just)
-                .orElseGet(Mono::empty);
-    }
-
-    private Action<Float, Void, DefaultActionMetadata> createInvocation(IRI invocationIRI, Model invocationModel) {
-        DefaultActionMetadataBuilder metadataBuilder = new DefaultActionMetadataBuilder(invocationIRI);
-        FloatSetterBuilder<DefaultActionMetadata> invocationBuilder = new FloatSetterBuilder<>(metadataBuilder);
-        invocationBuilder.processAll(invocationModel);
-        return invocationBuilder.build();
     }
 
     private Building fetchLocationBuilding(Thing building) {
@@ -121,7 +88,10 @@ public class HeaterProvider {
         return new Building(len, width, height);
     }
 
-    private Flux<Void> scheduleSimulation(ConnectionContext context, HeaterSimulationTwin state, Duration interval) {
+    private Flux<Void> scheduleSimulation(ConnectionContext context,
+                                          ThingActionAffordanceRepository actionAffordances,
+                                          HeaterSimulationTwin state,
+                                          Duration interval) {
         logger.info("Launching simulation...");
         return Flux.interval(interval, Schedulers.fromExecutor(context.getExecutor()))
                 .flatMap(tick -> {
@@ -204,27 +174,34 @@ public class HeaterProvider {
         logger.info("Thing Model successfully populated...");
     }
 
-    private Mono<HeaterSimulationTwin> fetchInitialState(Thing thing) {
+    private Mono<HeaterSimulationTwin> fetchInitialState(Thing thing,
+                                                         ThingPropertyAffordanceRepository properties,
+                                                         ThingActionAffordanceRepository actions) {
         IRI powerAffordanceIRI = iri("https://example.agentlab.ru/#Heater_1_PowerDemand");
         IRI outsideTemperatureIRI = iri("https://example.agentlab.ru/#Heater_1_OutdoorTemperature");
         IRI insideTemperatureIRI = iri("https://example.agentlab.ru/#Heater_1_IndoorTemperature");
         IRI setPowerActionIRI = iri("https://example.agentlab.ru/#Heater_1_SetHeatingPowerAction");
-        var powerAffordanceMono = propertyAffordances.getThingPropertyAffordance(
+        var powerAffordanceMono = properties.getThingPropertyAffordance(
                 thing,
                 powerAffordanceIRI
         );
-        var outsideTemperatureMono = propertyAffordances.getThingPropertyAffordance(
+        var outsideTemperatureMono = properties.getThingPropertyAffordance(
                 thing,
                 outsideTemperatureIRI
         );
-        var insideTemperatureMono = propertyAffordances.getThingPropertyAffordance(
+        var insideTemperatureMono = properties.getThingPropertyAffordance(
                 thing,
                 insideTemperatureIRI
         );
-        var actionAffordanceMono = actionAffordances.getActionAffordance(
+        var actionAffordanceMono = actions.getActionAffordance(
                 thing,
                 setPowerActionIRI
         );
+
+        ObservationFactory<Float, DefaultObservationMetadata> obsFactory = (obsIRI) -> {
+            DefaultMetadataBuilder metadataBuilder = new DefaultMetadataBuilder(obsIRI);
+            return new FloatObservationBuilder<>(metadataBuilder);
+        };
 
         Building building = fetchLocationBuilding(thing);
         return Mono.zip(powerAffordanceMono, outsideTemperatureMono, insideTemperatureMono, actionAffordanceMono)
@@ -234,11 +211,10 @@ public class HeaterProvider {
                     var insideTemperatureAffordance = affordances.getT3();
                     var powerSetter = affordances.getT4();
 
-
                     return Mono.zip((observations) -> {
-                                        var initialIndoorTemperature = ((FloatObservation<DefaultObservationMetadata>) observations[2]).getValue();
-                                        var initialOutdoorTemperature = ((FloatObservation<DefaultObservationMetadata>) observations[1]).getValue();
                                         var initialHeatingPower = ((FloatObservation<DefaultObservationMetadata>) observations[0]).getValue();
+                                        var initialOutdoorTemperature = ((FloatObservation<DefaultObservationMetadata>) observations[1]).getValue();
+                                        var initialIndoorTemperature = ((FloatObservation<DefaultObservationMetadata>) observations[2]).getValue();
                                         var simulationModel = new HeaterSimulationModel(building,
                                                                                         initialHeatingPower,
                                                                                         initialOutdoorTemperature,
@@ -252,41 +228,17 @@ public class HeaterProvider {
                                                                         powerSetter
                                         );
                                     },
-                                    fromAffordance(powerAffordance),
-                                    fromAffordance(outsideTemperatureAffordance),
-                                    fromAffordance(insideTemperatureAffordance)
+                                    properties.latestObservation(powerAffordance, obsFactory),
+                                    properties.latestObservation(outsideTemperatureAffordance, obsFactory),
+                                    properties.latestObservation(insideTemperatureAffordance, obsFactory)
                     );
                 });
-    }
-
-    private static ChangetrackingFilter createObservationFilterForProperty(IRI property) {
-        return ChangetrackingFilter.builder()
-                .addPattern(null, DESCRIBED_BY_AFFORDANCE, property, ChangetrackingFilter.Filtering.ADDED)
-                .addPattern(null, HAS_VALUE, null, ChangetrackingFilter.Filtering.ADDED)
-                .addPattern(null, MODIFIED, null, ChangetrackingFilter.Filtering.ADDED)
-                .build();
-    }
-
-    private static ChangetrackingFilter createObservationFilterForAction(IRI action) {
-        return ChangetrackingFilter.builder()
-                .addPattern(null, DESCRIBED_BY_AFFORDANCE, action, ChangetrackingFilter.Filtering.ADDED)
-                .addPattern(null, HAS_INPUT, null, ChangetrackingFilter.Filtering.ADDED)
-                .addPattern(null, HAS_OUTPUT, null, ChangetrackingFilter.Filtering.ADDED)
-                .addPattern(null, MODIFIED, null, ChangetrackingFilter.Filtering.ADDED)
-                .build();
-    }
-
-    private Mono<Observation<Float, DefaultObservationMetadata>> fromAffordance(ThingPropertyAffordance affordance) {
-        DefaultMetadataBuilder metadataBuilder = new DefaultMetadataBuilder();
-        var observationBuilder = new FloatObservationBuilder<>(metadataBuilder);
-        return propertyAffordances.latestObservation(affordance.getIRI(), observationBuilder);
     }
 
     @Deactivate
     public void deactivate() {
         repository = null;
         subscription.dispose();
-        executor.shutdown();
     }
 
 }
