@@ -14,6 +14,11 @@ public class ConnectionContext {
         this.connection = connection;
     }
 
+    public void close() {
+        connection.close();
+        executor.shutdown();
+    }
+
     public SailRepositoryConnection getConnection() {
         return connection;
     }

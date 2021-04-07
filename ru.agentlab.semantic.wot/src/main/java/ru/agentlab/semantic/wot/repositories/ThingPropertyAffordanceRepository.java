@@ -39,6 +39,25 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
         this.context = context;
     }
 
+    public Flux<ThingPropertyAffordance> discoverPropertyAffordancesWithType(IRI... desiredAffordanceType) {
+        return Utils.supplyAsyncWithCancel(() -> {
+            Variable affordanceIRI = var("affordanceIRI");
+            Variable thingIRI = var("thingIRI");
+            GraphPattern pattern = tp(thingIRI, HAS_PROPERTY_AFFORDANCE, affordanceIRI);
+            for (IRI iri : desiredAffordanceType) {
+                pattern = pattern.union(tp(affordanceIRI, RDF.TYPE, iri));
+            }
+
+            SelectQuery query = Queries.SELECT(affordanceIRI, thingIRI).where(pattern).distinct();
+            var prepared = context.getConnection().prepareTupleQuery(query.getQueryString());
+            return prepared.evaluate().stream().map(binding -> {
+                var foundAffordanceIRI = (IRI) binding.getBinding("affordanceIRI").getValue();
+                var foundThingIRI = (IRI) binding.getBinding("affordanceIRI").getValue();
+                return getThingPropertyAffordanceSync(foundThingIRI, foundAffordanceIRI);
+            });
+        }, context.getExecutor()).flatMapMany(Flux::fromStream);
+    }
+
     public Flux<ThingPropertyAffordance> getPropertyAffordancesWithType(Thing thing, IRI... desiredAffordanceType) {
         var thingIRI = thing.getIRI();
         return Utils.supplyAsyncWithCancel(() -> {
@@ -67,6 +86,10 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
     }
 
     public ThingPropertyAffordance getThingPropertyAffordanceSync(Thing thing, IRI affordanceIRI) {
+        return getThingPropertyAffordanceSync(thing.getIRI(), affordanceIRI);
+    }
+
+    public ThingPropertyAffordance getThingPropertyAffordanceSync(IRI thingIRI, IRI affordanceIRI) {
         Model model = new LinkedHashModel();
         List<IRI> types = new ArrayList<>();
 
@@ -76,7 +99,7 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
                 types.add((IRI) st.getObject());
             }
         }
-        return new ThingPropertyAffordance(thing.getIRI(), affordanceIRI, types, model);
+        return new ThingPropertyAffordance(thingIRI, affordanceIRI, types, model);
     }
 
     public Mono<ThingPropertyAffordance> getThingPropertyAffordance(Thing thing, IRI affordanceIRI) {
