@@ -10,15 +10,34 @@
 @prefix tdx:        <https://tdx.agentlab.ru/#> .
 @prefix saref:      <https://w3id.org/saref#> .
 @prefix ex:         <https://example.agentlab.ru/#> .
+@prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+ex:BMSTU_Main_Campus
+  a schema:Place ;
+  schema:name "Bauman Moscow Technical University" ;
+  schema:address [
+    rdf:type schema:PostalAddress ;
+    schema:addressLocality "Moscow";
+    schema:streetAddress "2-я Бауманская улица, 5с4"
+  ] ;
+  schema:location [
+    rdf:type schema:GeoCoordinates  ;
+    schema:longitude 55.765711 ;
+    schema:latitude 37.685460 ;
+  ].
 
 ex:WindGeneratorModel
   a ex:WindGenerator, tdx:ThingModel ;
   dct:title "Generic Wind Generator" ;
+  td:hasPropertyAffordance ex:GenericGeneratorLocation ;
   td:hasPropertyAffordance ex:GenericCurrentOutput ;
   td:hasPropertyAffordance ex:GenericWindSpeed.
 
 ex:GenericCurrentOutput
   a ex:Power, td:PropertyAffordance.
+
+ex:GenericGeneratorLocation
+  a schema:Place, td:PropertyAffordance.
 
 ex:GenericWindSpeed
   a ex:Wind, td:PropertyAffordance.
@@ -27,7 +46,18 @@ ex:WindGeneratorModel_1
   a td:Thing, ex:WindGenerator ;
   tdx:hasThingModel ex:WindGeneratorModel ;
   td:hasPropertyAffordance ex:CurrentOutputAffordance_1 ;
-  td:hasPropertyAffordance ex:CurrentWindSpeed_1.
+  td:hasPropertyAffordance ex:CurrentWindSpeed_1 ;
+  td:hasPropertyAffordance ex:WindGeneratorModel_1_GeneratorLocation.
+
+ex:WindGeneratorModel_1_GeneratorLocation
+  a schema:Place, td:PropertyAffordance ;
+  td:describedBy ex:GenericGeneratorLocation.
+
+ex:WindGeneratorModel_1_GeneratorLocation_Observation_1
+  a tdx:PropertyState;
+  tdx:hasValue ex:BMSTU_Main_Campus;
+  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
+  tdx:describedByAffordance ex:WindGeneratorModel_1_GeneratorLocation.
 
 ex:CurrentOutputAffordance_1
   a ex:Power, td:PropertyAffordance ;
