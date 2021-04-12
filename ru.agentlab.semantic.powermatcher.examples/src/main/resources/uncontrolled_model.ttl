@@ -53,35 +53,9 @@ ex:WindGeneratorModel_1_GeneratorLocation
   a schema:Place, td:PropertyAffordance ;
   td:describedBy ex:GenericGeneratorLocation.
 
-ex:WindGeneratorModel_1_GeneratorLocation_Observation_1
-  a tdx:PropertyState;
-  tdx:hasValue ex:BMSTU_Main_Campus;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:WindGeneratorModel_1_GeneratorLocation.
-
 ex:CurrentOutputAffordance_1
   a ex:Power, td:PropertyAffordance ;
   tdx:describedBy ex:GenericCurrentOutput.
 
 ex:CurrentWindSpeed_1
   tdx:describedBy ex:GenericWindSpeed.
-
-ex:CurrentWindSpeedObservation_1
-  a tdx:PropertyState ;
-  tdx:hasValue "10"^^xsd:double ;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:CurrentWindSpeed_1.
-
-ex:CurrentOutputObservation_1
-  a tdx:PropertyState ;
-  tdx:hasValue "10000"^^xsd:double ;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:CurrentOutputAffordance_1.
-
-ex:CurrentOutputObservation_2
-  a tdx:PropertyState ;
-  tdx:hasValue "10000"^^xsd:double ;
-  tdx:modified "2021-03-11T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:CurrentOutputAffordance_1.
-
-

@@ -52,40 +52,16 @@ ex:Heater_1_SetHeatingPowerAction
   td:hasInputSchema ex:GenericSetHeatingPowerInput ;
   tdx:describedBy ex:GenericSetHeatingPower.
 
-#ex:Heater_1_SetPowerInput_Invocation_1
-#  a tdx:ActionInvocation ;
-# tdx:describedByAffordance
-#  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
-#  tdx:hasInput "1000"^^xsd::double.
-
 ex:Heater_1_IndoorTemperature
   a ex:Temperature, td:PropertyAffordance ;
   ex:LocationType ex:Inside ;
   tdx:describedBy ex:GenericIndoorTemperature.
-
-ex:Heater_1_IndoorTemperature_Observation_1
-  a tdx:PropertyState ;
-  tdx:hasValue "10"^^xsd:double ;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:Heater_1_IndoorTemperature.
 
 ex:Heater_1_OutdoorTemperature
   a ex:Temperature, td:PropertyAffordance ;
   ex:LocationType ex:Outside ;
   tdx:describedBy ex:GenericOutdoorTemperature.
 
-ex:Heater_1_OutdoorTemperature_Observation_1
-  a tdx:PropertyState ;
-  tdx:hasValue "10"^^xsd:double ;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:Heater_1_OutdoorTemperature.
-
 ex:Heater_1_PowerDemand
   a ex:Power, td:PropertyAffordance ;
   tdx:describedBy ex:GenericPowerDemand.
-
-ex:Heater_1_PowerDemand_Observation_1
-  a tdx:PropertyState ;
-  tdx:hasValue "10"^^xsd:double ;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:Heater_1_PowerDemand.
