@@ -23,6 +23,10 @@ public class ConnectionContext {
         return connection;
     }
 
+    public SailRepositoryConnection createConnection() {
+        return (SailRepositoryConnection) connection.getRepository().getConnection();
+    }
+
     public SailConnection getSailConnection() {
         return connection.getSailConnection();
     }

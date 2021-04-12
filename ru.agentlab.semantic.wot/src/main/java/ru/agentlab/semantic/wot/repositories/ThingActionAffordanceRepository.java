@@ -10,8 +10,9 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import reactor.core.publisher.Mono;
-import ru.agentlab.semantic.wot.observation.api.Action;
-import ru.agentlab.semantic.wot.observation.api.ActionBuilder;
+import ru.agentlab.semantic.wot.api.Action;
+import ru.agentlab.semantic.wot.api.ActionParser;
+import ru.agentlab.semantic.wot.api.Metadata;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingActionAffordance;
@@ -112,14 +113,16 @@ public class ThingActionAffordanceRepository implements WotRepository {
         }
     }
 
-    public <I, O, M> Mono<Action<I, O, M>> latestInvocation(IRI actionAffordanceIRI, ActionBuilder<I, O, M> builder) {
+    public <I, O, M extends Metadata<M>> Mono<Action<I, O, M>> latestInvocation(IRI actionAffordanceIRI,
+                                                                                ActionParser<I, O, M> builder) {
         return Utils.supplyAsyncWithCancel(
                 () -> latestInvocationSync(actionAffordanceIRI, builder),
                 context.getExecutor()
         ).flatMap(Mono::justOrEmpty);
     }
 
-    public <I, O, M> Optional<Action<I, O, M>> latestInvocationSync(IRI actionAffordanceIRI, ActionBuilder<I, O, M> builder) {
+    public <I, O, M extends Metadata<M>> Optional<Action<I, O, M>> latestInvocationSync(IRI actionAffordanceIRI,
+                                                                                        ActionParser<I, O, M> builder) {
         var conn = this.context.getConnection();
         Variable mostRecent = var("mostRecent");
         Variable lastModified = var("lastModified");

@@ -14,9 +14,10 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import ru.agentlab.changetracking.filter.ChangetrackingFilter;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
-import ru.agentlab.semantic.wot.observation.api.Observation;
-import ru.agentlab.semantic.wot.observation.api.ObservationBuilder;
-import ru.agentlab.semantic.wot.observation.api.ObservationFactory;
+import ru.agentlab.semantic.wot.api.Metadata;
+import ru.agentlab.semantic.wot.api.Observation;
+import ru.agentlab.semantic.wot.api.ObservationParser;
+import ru.agentlab.semantic.wot.api.ObservationFactory;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
@@ -108,31 +109,31 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
         );
     }
 
-    public <T, M> Mono<Observation<T, M>> latestObservation(ThingPropertyAffordance propertyAffordance,
-                                                            ObservationFactory<T, M> observationFactory) {
+    public <T, M extends Metadata<M>> Mono<Observation<T, M>> latestObservation(ThingPropertyAffordance propertyAffordance,
+                                                                                ObservationFactory<T, M> observationFactory) {
         return latestObservation(propertyAffordance.getIRI(), observationFactory);
     }
 
-    public <T, M> Mono<Observation<T, M>> latestObservation(IRI propertyAffordanceIRI,
-                                                            ObservationFactory<T, M> observationFactory) {
+    public <T, M extends Metadata<M>> Mono<Observation<T, M>> latestObservation(IRI propertyAffordanceIRI,
+                                                                                ObservationFactory<T, M> observationFactory) {
         return latestObservation(propertyAffordanceIRI, observationFactory.createObservationBuilder(null));
     }
 
-    public <T, M> Mono<Observation<T, M>> latestObservation(ThingPropertyAffordance propertyAffordance,
-                                                            ObservationBuilder<T, M> builder) {
+    public <T, M extends Metadata<M>> Mono<Observation<T, M>> latestObservation(ThingPropertyAffordance propertyAffordance,
+                                                                                ObservationParser<T, M> builder) {
         return latestObservation(propertyAffordance.getIRI(), builder);
     }
 
-    public <T, M> Mono<Observation<T, M>> latestObservation(IRI propertyAffordanceIRI,
-                                                            ObservationBuilder<T, M> builder) {
+    public <T, M extends Metadata<M>> Mono<Observation<T, M>> latestObservation(IRI propertyAffordanceIRI,
+                                                                                ObservationParser<T, M> builder) {
         return Utils.supplyAsyncWithCancel(
                 () -> latestObservationSync(propertyAffordanceIRI, builder),
                 context.getExecutor()
         );
     }
 
-    public <T, M> Observation<T, M> latestObservationSync(IRI propertyAffordanceIRI,
-                                                          ObservationBuilder<T, M> builder) {
+    public <T, M extends Metadata<M>> Observation<T, M> latestObservationSync(IRI propertyAffordanceIRI,
+                                                                              ObservationParser<T, M> builder) {
         var conn = this.context.getConnection();
         Variable mostRecent = var("mostRecent");
         Variable lastModified = var("lastModified");
@@ -156,15 +157,15 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
         return builder.build();
     }
 
-    public <T, M> Flux<Observation<T, M>> subscribeOnLatestObservations(ThingPropertyAffordance propertyAffordance,
-                                                                        ObservationFactory<T, M> observationFactory,
-                                                                        Comparator<Observation<T, M>> comparator) {
+    public <T, M extends Metadata<M>> Flux<Observation<T, M>> subscribeOnLatestObservations(ThingPropertyAffordance propertyAffordance,
+                                                                                            ObservationFactory<T, M> observationFactory,
+                                                                                            Comparator<Observation<T, M>> comparator) {
         return subscribeOnLatestObservations(propertyAffordance.getIRI(), observationFactory, comparator);
     }
 
-    public <T, M> Flux<Observation<T, M>> subscribeOnLatestObservations(IRI propertyAffordanceIRI,
-                                                                        ObservationFactory<T, M> observationFactory,
-                                                                        Comparator<Observation<T, M>> comparator) {
+    public <T, M extends Metadata<M>> Flux<Observation<T, M>> subscribeOnLatestObservations(IRI propertyAffordanceIRI,
+                                                                                            ObservationFactory<T, M> observationFactory,
+                                                                                            Comparator<Observation<T, M>> comparator) {
         var scheduler = Schedulers.fromExecutor(context.getExecutor());
         ChangetrackingFilter filter = Utils.makeAffordanceObservationsFilter(propertyAffordanceIRI);
         var sailConn = (ChangeTrackerConnection) context.getSailConnection();

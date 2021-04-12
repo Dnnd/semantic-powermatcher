@@ -4,17 +4,16 @@ package ru.agentlab.semantic.wot.utils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import ru.agentlab.changetracking.filter.ChangetrackingFilter;
 import ru.agentlab.changetracking.filter.Transformations;
 import ru.agentlab.changetracking.sail.TransactionChanges;
-import ru.agentlab.semantic.wot.observation.api.Observation;
-import ru.agentlab.semantic.wot.observation.api.ObservationFactory;
+import ru.agentlab.semantic.wot.api.Metadata;
+import ru.agentlab.semantic.wot.api.Observation;
+import ru.agentlab.semantic.wot.api.ObservationFactory;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -25,10 +24,10 @@ import java.util.function.Supplier;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
 public class Utils {
-    public static <T, M> Mono<Observation<T, M>> extractLatestObservation(TransactionChanges changes,
-                                                                          ObservationFactory<T, M> obsFactory,
-                                                                          ChangetrackingFilter changesFilter,
-                                                                          Comparator<Observation<T, M>> comparator) {
+    public static <T, M extends Metadata<M>> Mono<Observation<T, M>> extractLatestObservation(TransactionChanges changes,
+                                                                                              ObservationFactory<T, M> obsFactory,
+                                                                                              ChangetrackingFilter changesFilter,
+                                                                                              Comparator<Observation<T, M>> comparator) {
         Map<IRI, Model> modelsBySubject = Transformations.groupBySubject(changes.getAddedStatements());
         return modelsBySubject.entrySet()
                 .stream()

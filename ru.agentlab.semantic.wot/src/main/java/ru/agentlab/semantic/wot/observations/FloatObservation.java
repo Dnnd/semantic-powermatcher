@@ -1,8 +1,9 @@
 package ru.agentlab.semantic.wot.observations;
 
-import ru.agentlab.semantic.wot.observation.api.Observation;
+import ru.agentlab.semantic.wot.api.Metadata;
+import ru.agentlab.semantic.wot.api.Observation;
 
-public class FloatObservation<M> implements Observation<Float, M> {
+public class FloatObservation<M extends Metadata<M>> implements Observation<Float, M> {
     private final Float value;
     private M metadata;
 

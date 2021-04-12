@@ -1,8 +1,9 @@
 package ru.agentlab.semantic.wot.actions;
 
-import ru.agentlab.semantic.wot.observation.api.Action;
+import ru.agentlab.semantic.wot.api.Action;
+import ru.agentlab.semantic.wot.api.Metadata;
 
-public class FloatSetter<M> implements Action<Float, Void, M> {
+public class FloatSetter<M extends Metadata<M>> implements Action<Float, Void, M> {
     private final Float inputData;
     private M metadata;
 

@@ -1,9 +1,10 @@
 package ru.agentlab.semantic.wot.observations;
 
 import org.eclipse.rdf4j.model.IRI;
-import ru.agentlab.semantic.wot.observation.api.Observation;
+import ru.agentlab.semantic.wot.api.Metadata;
+import ru.agentlab.semantic.wot.api.Observation;
 
-public class IRIObservation<M> implements Observation<IRI, M> {
+public class IRIObservation<M extends Metadata<M>> implements Observation<IRI, M> {
     private M metadata;
     private final IRI value;
 
