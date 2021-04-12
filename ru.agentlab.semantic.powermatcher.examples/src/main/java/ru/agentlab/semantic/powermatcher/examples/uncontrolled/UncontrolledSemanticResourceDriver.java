@@ -20,10 +20,10 @@ import ru.agentlab.changetracking.filter.ChangetrackingFilter;
 import ru.agentlab.changetracking.filter.Transformations;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.changetracking.sail.TransactionChanges;
-import ru.agentlab.semantic.wot.observation.api.Observation;
-import ru.agentlab.semantic.wot.observations.DefaultMetadataBuilder;
-import ru.agentlab.semantic.wot.observations.DefaultObservationMetadata;
-import ru.agentlab.semantic.wot.observations.FloatObservationBuilder;
+import ru.agentlab.semantic.wot.api.Observation;
+import ru.agentlab.semantic.wot.observations.DefaultMetadata;
+import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
+import ru.agentlab.semantic.wot.observations.FloatObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
@@ -125,7 +125,7 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
         logger.info("Uncontrolled semantic resource driver...Done");
     }
 
-    private static Mono<Observation<Float, DefaultObservationMetadata>> extractLatestObservation(TransactionChanges changes, ChangetrackingFilter modelFilter) {
+    private static Mono<Observation<Float, DefaultMetadata>> extractLatestObservation(TransactionChanges changes, ChangetrackingFilter modelFilter) {
         Map<IRI, Model> modelsBySubject = Transformations.groupBySubject(changes.getAddedStatements());
         return modelsBySubject.entrySet()
                 .stream()
@@ -141,9 +141,9 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
                 .orElseGet(Mono::empty);
     }
 
-    private static Observation<Float, DefaultObservationMetadata> createObservation(IRI observationIRI, Model observationModel) {
-        var metadataBuilder = new DefaultMetadataBuilder(observationIRI);
-        var observationBuilder = new FloatObservationBuilder<>(metadataBuilder);
+    private static Observation<Float, DefaultMetadata> createObservation(IRI observationIRI, Model observationModel) {
+        var metadataBuilder = new DefaultMetadataParser(observationIRI);
+        var observationBuilder = new FloatObservationParser<>(metadataBuilder);
         return observationBuilder.processAll(observationModel).build();
     }
 

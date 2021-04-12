@@ -51,6 +51,16 @@ public class UncontrolledDriverTest {
                 public int intervalMsec() {
                     return 500;
                 }
+
+                @Override
+                public String thingContext() {
+                    return "https://things.agentlab.ru";
+                }
+
+                @Override
+                public String stateContext() {
+                    return "https://observations.agentlab.ru";
+                }
             });
             driver.activate(new UncontrolledSemanticResourceDriver.Config() {
 

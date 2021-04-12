@@ -60,6 +60,9 @@ public class SemanticUncontrolledResourceSimulation {
         float to() default 10000;
 
         int intervalMsec() default 1000;
+
+        String thingContext() default "";
+        String stateContext() default "";
     }
 
     @Reference
@@ -96,7 +99,8 @@ public class SemanticUncontrolledResourceSimulation {
     }
 
     private void populateThingModel(ConnectionContext ctx) {
-        try (var uncontrolledTTL = getClass().getClassLoader().getResourceAsStream("uncontrolled.ttl")) {
+        try (var uncontrolledTTL = getClass().getClassLoader().getResourceAsStream(
+                "uncontrolled_initial_observations.ttl")) {
             var model = Rio.parse(uncontrolledTTL, RDFFormat.TURTLE);
             ctx.getConnection().add(model);
         } catch (IOException exception) {

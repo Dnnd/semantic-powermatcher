@@ -42,8 +42,18 @@ public class HeaterDriverTest {
                 }
 
                 @Override
+                public String stateContext() {
+                    return "https://observations.agentlab.ru/";
+                }
+
+                @Override
                 public int updateFrequency() {
                     return 1000;
+                }
+
+                @Override
+                public String thingContext() {
+                    return "https://things.agentlab.ru/";
                 }
             });
             hd.activate(new HeaterDriver.Config() {

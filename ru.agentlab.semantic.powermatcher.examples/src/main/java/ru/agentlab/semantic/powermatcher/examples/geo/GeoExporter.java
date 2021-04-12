@@ -11,11 +11,11 @@ import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
-import ru.agentlab.semantic.wot.observation.api.Observation;
-import ru.agentlab.semantic.wot.observation.api.ObservationFactory;
-import ru.agentlab.semantic.wot.observations.DefaultMetadataBuilder;
-import ru.agentlab.semantic.wot.observations.DefaultObservationMetadata;
-import ru.agentlab.semantic.wot.observations.IRIObservationBuilder;
+import ru.agentlab.semantic.wot.api.Observation;
+import ru.agentlab.semantic.wot.api.ObservationFactory;
+import ru.agentlab.semantic.wot.observations.DefaultMetadata;
+import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
+import ru.agentlab.semantic.wot.observations.IRIObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 
@@ -60,17 +60,20 @@ public class GeoExporter {
         subscription.dispose();
     }
 
-    private Flux<Observation<IRI, DefaultObservationMetadata>> discoverPlaceObservations(ThingPropertyAffordanceRepository properties) {
-        ObservationFactory<IRI, DefaultObservationMetadata> iriObsBuilderFactory = (obsIRI) ->
-                new IRIObservationBuilder<>(new DefaultMetadataBuilder(obsIRI));
+    private Flux<Observation<IRI, DefaultMetadata>> discoverPlaceObservations(ThingPropertyAffordanceRepository props) {
+        ObservationFactory<IRI, DefaultMetadata> iriObsBuilderFactory = (obsIRI) ->
+                new IRIObservationParser<>(new DefaultMetadataParser(obsIRI));
 
-        return properties.discoverPropertyAffordancesWithType(PLACE)
+        return props.discoverPropertyAffordancesWithType(PLACE)
                 .flatMap(locationAffordance -> {
-                    var latestObs = properties.latestObservation(locationAffordance.getIRI(), iriObsBuilderFactory);
-                    Comparator<Observation<IRI, DefaultObservationMetadata>> byLastModified = Comparator.comparing(
+                    var latestObs = props.latestObservation(
+                            locationAffordance.getIRI(),
+                            iriObsBuilderFactory
+                    );
+                    Comparator<Observation<IRI, DefaultMetadata>> byLastModified = Comparator.comparing(
                             obs -> obs.getMetadata().getLastModified()
                     );
-                    return latestObs.concatWith(properties.subscribeOnLatestObservations(
+                    return latestObs.concatWith(props.subscribeOnLatestObservations(
                             locationAffordance.getIRI(),
                             iriObsBuilderFactory,
                             byLastModified

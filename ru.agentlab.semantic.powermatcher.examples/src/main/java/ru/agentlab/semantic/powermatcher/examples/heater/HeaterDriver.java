@@ -2,10 +2,6 @@ package ru.agentlab.semantic.powermatcher.examples.heater;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
-import org.eclipse.rdf4j.model.util.Values;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.flexiblepower.manager.heater.api.HeaterControlParameters;
 import org.flexiblepower.manager.heater.api.HeaterState;
@@ -19,11 +15,13 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
-import ru.agentlab.semantic.wot.observation.api.Observation;
-import ru.agentlab.semantic.wot.observation.api.ObservationFactory;
-import ru.agentlab.semantic.wot.observations.DefaultMetadataBuilder;
-import ru.agentlab.semantic.wot.observations.DefaultObservationMetadata;
-import ru.agentlab.semantic.wot.observations.FloatObservationBuilder;
+import ru.agentlab.semantic.wot.actions.FloatSetter;
+import ru.agentlab.semantic.wot.api.Action;
+import ru.agentlab.semantic.wot.api.Observation;
+import ru.agentlab.semantic.wot.api.ObservationFactory;
+import ru.agentlab.semantic.wot.observations.DefaultMetadata;
+import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
+import ru.agentlab.semantic.wot.observations.FloatObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
@@ -34,7 +32,6 @@ import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
 
 import javax.measure.unit.SI;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -59,7 +56,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
 
     private SailRepository repository;
 
-    private final ObservationFactory<Float, DefaultObservationMetadata> floatObservationsFactory;
+    private final ObservationFactory<Float, DefaultMetadata> floatObservationsFactory;
     private Disposable onStateUpdateSubscription;
     private final Sinks.Many<Double> setPowerSink = Sinks.many().unicast().onBackpressureBuffer();
     private Disposable onControlParametersReceived;
@@ -68,7 +65,8 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     private ThingActionAffordanceRepository actionAffordances;
 
     public HeaterDriver() {
-        floatObservationsFactory = (obsIri) -> new FloatObservationBuilder<>(new DefaultMetadataBuilder(obsIri));
+        floatObservationsFactory = (obsIri) -> new FloatObservationParser<>(new DefaultMetadataParser(
+                obsIri));
     }
 
 
@@ -97,7 +95,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
 
         onControlParametersReceived = thingMono.flatMap(thing -> actionAffordances.byDescription(
                 thing,
-                iri("https://example.agentlab.ru/#GenericSetHeatingPower")
+                iri(EXAMPLE_IRI, "#GenericSetHeatingPower")
         )).flatMapMany(actionAffordance -> setPowerSink.asFlux().doOnNext(powerToSet -> {
             var setter = serializeFloatSetter(actionAffordance, powerToSet);
             repoConn.add(setter);
@@ -156,10 +154,11 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     private Flux<HeaterResourceState> subscribeOnHeaterStateUpdates(ThingPropertyAffordance indoorTemperature,
                                                                     ThingPropertyAffordance heatingPower) {
         var lastModifiedComparator = Comparator.comparing(
-                (Observation<Float, DefaultObservationMetadata> obs) -> obs.getMetadata().getLastModified()
+                (Observation<Float, DefaultMetadata> obs) -> obs.getMetadata().getLastModified()
         );
 
-        var heatingPowerUpdates = propertyAffordances.latestObservation(heatingPower, floatObservationsFactory)
+        var heatingPowerUpdates = propertyAffordances
+                .latestObservation(heatingPower, floatObservationsFactory)
                 .concatWith(propertyAffordances.subscribeOnLatestObservations(
                         heatingPower,
                         floatObservationsFactory,
@@ -179,17 +178,15 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     }
 
     private Model serializeFloatSetter(ThingActionAffordance affordance, double value) {
-        Model model = new LinkedHashModel();
+        IRI actionInvocation = iri(EXAMPLE_IRI, UUID.randomUUID().toString());
+        Action<Float, Void, DefaultMetadata> setter = new FloatSetter<>((float) value);
         OffsetDateTime now = OffsetDateTime.now();
-        String time = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        IRI actionInvocation = iri("https://example.agentlab.ru#" + UUID.randomUUID().toString());
-        model.add(actionInvocation, RDF.TYPE, ACTION_INVOCATION);
-        model.add(actionInvocation, DESCRIBED_BY_AFFORDANCE, affordance.getIRI());
-        model.add(actionInvocation,
-                  HAS_INPUT,
-                  Values.literal(value)
-        );
-        model.add(actionInvocation, MODIFIED, Values.literal(time, XSD.DATETIME));
-        return model;
+        setter.setMetadata(new DefaultMetadata(
+                affordance.getIRI(),
+                actionInvocation,
+                now,
+                ACTION_INVOCATION
+        ));
+        return setter.toModel();
     }
 }
