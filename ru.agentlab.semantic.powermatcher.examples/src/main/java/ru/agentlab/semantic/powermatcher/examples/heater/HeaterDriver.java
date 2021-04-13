@@ -95,7 +95,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
 
         onControlParametersReceived = thingMono.flatMap(thing -> actionAffordances.byDescription(
                 thing,
-                iri(EXAMPLE_IRI, "#GenericSetHeatingPower")
+                iri(EXAMPLE_IRI, "GenericSetHeatingPower")
         )).flatMapMany(actionAffordance -> setPowerSink.asFlux().doOnNext(powerToSet -> {
             var setter = serializeFloatSetter(actionAffordance, powerToSet);
             repoConn.add(setter);

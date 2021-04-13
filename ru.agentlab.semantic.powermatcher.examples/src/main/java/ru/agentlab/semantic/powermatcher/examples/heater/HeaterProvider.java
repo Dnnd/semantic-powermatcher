@@ -177,18 +177,16 @@ public class HeaterProvider {
             conn.begin();
             try (var initialObservations = openResourceStream("heater_initial_observations.ttl");
                  var heaterThing = openResourceStream("heater_model.ttl")) {
-
                 var obsModel = Rio.parse(initialObservations, RDFFormat.TURTLE);
                 var heaterModel = Rio.parse(heaterThing, RDFFormat.TURTLE);
-                conn.add(obsModel, modelContext);
-                conn.add(heaterModel, obsContext);
-
+                conn.add(obsModel, obsContext);
+                conn.add(heaterModel, modelContext);
+                conn.commit();
             } catch (Exception e) {
                 conn.rollback();
                 logger.error("unable to populate thing model", e);
                 return;
             }
-            conn.commit();
             logger.info("Thing Model successfully populated...");
         }
     }
