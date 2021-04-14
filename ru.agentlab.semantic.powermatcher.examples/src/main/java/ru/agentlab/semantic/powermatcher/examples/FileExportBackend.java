@@ -19,7 +19,7 @@ public class FileExportBackend implements ExporterBackend {
     @Override
     public void exportData(RepositoryConnection source, Resource... context) {
         try (var writer = new FileWriter(exportTarget, false)) {
-            var rdfHandler = Rio.createWriter(RDFFormat.TURTLE, writer);
+            var rdfHandler = Rio.createWriter(RDFFormat.TRIG, writer);
             source.export(rdfHandler, context);
         } catch (IOException e) {
             throw new RuntimeException(e);
