@@ -12,9 +12,18 @@
 @prefix ex:         <https://example.agentlab.ru/#> .
 @prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
+ex:WindGeneratorSite
+  a schema:Place ;
+  schema:name "Laborovaya Wind Generator Site" ;
+  schema:location [
+    rdf:type schema:GeoCoordinates ;
+    schema:longitude 67.651876 ;
+    schema:latitude 67.548969 ;
+  ].
+
 ex:WindGeneratorModel_1_GeneratorLocation_Observation_1
   a tdx:PropertyState ;
-  tdx:hasValue ex:BMSTU_Main_Campus ;
+  tdx:hasValue ex:WindGeneratorSite ;
   tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
   tdx:describedByAffordance ex:WindGeneratorModel_1_GeneratorLocation.
 
@@ -29,3 +38,4 @@ ex:CurrentOutputObservation_1
   tdx:hasValue "10000"^^xsd:double ;
   tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
   tdx:describedByAffordance ex:CurrentOutputAffordance_1.
+

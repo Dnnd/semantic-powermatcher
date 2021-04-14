@@ -12,19 +12,6 @@
 @prefix ex:         <https://example.agentlab.ru/#> .
 @prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
-ex:BMSTU_Main_Campus
-  a schema:Place ;
-  schema:name "Bauman Moscow Technical University" ;
-  schema:address [
-    rdf:type schema:PostalAddress ;
-    schema:addressLocality "Moscow";
-    schema:streetAddress "2-я Бауманская улица, 5с4"
-  ] ;
-  schema:location [
-    rdf:type schema:GeoCoordinates  ;
-    schema:longitude 55.765711 ;
-    schema:latitude 37.685460 ;
-  ].
 
 ex:WindGeneratorModel
   a ex:WindGenerator, tdx:ThingModel ;

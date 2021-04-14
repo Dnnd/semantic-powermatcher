@@ -14,8 +14,12 @@
 ex:HeaterModel
   a ex:Heater, tdx:ThingModel ;
   dct:title "Generic Heater" ;
-  td:hasPropertyAffordance ex:GenericIndoorTemperature, ex:GenericPowerDemand, ex:GenericOutdoorTemperature ;
+  td:hasPropertyAffordance
+    ex:GenericIndoorTemperature, ex:GenericPowerDemand, ex:GenericOutdoorTemperature, ex:GenericHeaterLocation ;
   td:hasActionAffordance ex:GenericSetHeatingPower.
+
+ex:GenericHeaterLocation
+  a schema:Place, td:PropertyAffordance.
 
 ex:GenericSetHeatingPower
   a td:ActionAffordance, ex:SetCommand ;
@@ -46,6 +50,10 @@ ex:Heater_1
   ex:width "2.5"^^xsd:double ;
   td:hasPropertyAffordance ex:Heater_1_IndoorTemperature, ex:Heater_1_OutdoorTemperature, ex:Heater_1_PowerDemand ;
   td:hasActionAffordance ex:Heater_1_SetHeatingPowerAction.
+
+ex:Heater_1_LocationAffordance
+  a schema:Place, td:PropertyAffordance ;
+  td:describedBy ex:GenericHeaterLocation.
 
 ex:Heater_1_SetHeatingPowerAction
   a td:ActionAffordance, ex:SetCommand ;

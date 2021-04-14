@@ -10,6 +10,21 @@
 @prefix tdx:        <https://tdx.agentlab.ru/#> .
 @prefix saref:      <https://w3id.org/saref#> .
 @prefix ex:         <https://example.agentlab.ru/#> .
+@prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+ex:House_1
+  a schema:Place ;
+  schema:name "Example of Laborovaya House" ;
+  schema:address [
+    rdf:type schema:PostalAddress ;
+    schema:addressLocality "Laborovaya" ;
+    schema:streetAddress "Россия, Ямало-Ненецкий автономный округ, Приуральский район, деревня Лаборовая, дом. 1"
+  ] ;
+  schema:location [
+    rdf:type schema:GeoCoordinates ;
+    schema:longitude 67.639323 ;
+    schema:latitude 67.558929 ;
+  ].
 
 ex:Heater_1_IndoorTemperature_Observation_1
   a tdx:PropertyState ;
@@ -17,6 +32,12 @@ ex:Heater_1_IndoorTemperature_Observation_1
   tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
   tdx:describedByAffordance ex:Heater_1_IndoorTemperature.
 
+
+ex:Heater_1_LocationAffordance_Observation_1
+  a tdx:PropertyState ;
+  tdx:hasValue ex:House_1 ;
+  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
+  tdx:describedByAffordance ex:Heater_1_LocationAffordance.
 
 ex:Heater_1_OutdoorTemperature_Observation_1
   a tdx:PropertyState ;
