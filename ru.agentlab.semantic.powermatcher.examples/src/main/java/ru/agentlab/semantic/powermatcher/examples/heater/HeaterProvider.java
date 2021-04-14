@@ -161,12 +161,12 @@ public class HeaterProvider {
                 stateContext
         );
         Model outdoorTemperatureObservation = makeFloatObservation(
-                state.getIndoor(),
+                state.getOutdoor(),
                 state.getModel().getOutdoorTemperature(),
                 stateContext
         );
         Model heatingPowerObservation = makeFloatObservation(
-                state.getIndoor(),
+                state.getPower(),
                 state.getModel().getHeatingPower(),
                 stateContext
         );
