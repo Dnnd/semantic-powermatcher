@@ -32,11 +32,6 @@ public class HeaterDriverTest {
                 }
 
                 @Override
-                public String resourceId() {
-                    return "heater";
-                }
-
-                @Override
                 public String thingIRI() {
                     return "https://example.agentlab.ru/#Heater_1";
                 }
