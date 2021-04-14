@@ -58,7 +58,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
 
     private final ObservationFactory<Float, DefaultMetadata> floatObservationsFactory;
     private Disposable onStateUpdateSubscription;
-    private final Sinks.Many<Double> setPowerSink = Sinks.many().unicast().onBackpressureBuffer();
+    private Sinks.Many<Double> setPowerSink;
     private Disposable onControlParametersReceived;
     private ConnectionContext context;
     private ThingPropertyAffordanceRepository propertyAffordances;
@@ -74,6 +74,8 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     public @interface Config {
 
         String thingIRI();
+
+        String stateContext();
     }
 
     @Reference
@@ -83,6 +85,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
 
     @Activate
     public void activate(Config config) {
+        setPowerSink = Sinks.many().unicast().onBackpressureBuffer();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         var repoConn = repository.getConnection();
         context = new ConnectionContext(executor, repoConn);
@@ -92,14 +95,14 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
         actionAffordances = new ThingActionAffordanceRepository(context);
 
         var thingMono = things.getThing(thingIRI).cache();
-
+        var stateContext = iri(config.stateContext());
         onControlParametersReceived = thingMono.flatMap(thing -> actionAffordances.byDescription(
                 thing,
                 iri(EXAMPLE_IRI, "GenericSetHeatingPower")
         )).flatMapMany(actionAffordance -> setPowerSink.asFlux().doOnNext(powerToSet -> {
             var setter = serializeFloatSetter(actionAffordance, powerToSet);
-            repoConn.add(setter);
-            logger.info("invoked power setting action...");
+            repoConn.add(setter, stateContext);
+            logger.info("invoked power setting action={}", setter);
         })).subscribe();
 
         onStateUpdateSubscription = thingMono.flatMapMany(this::subscribeOnHeaterStateUpdates)

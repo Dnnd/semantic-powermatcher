@@ -63,6 +63,11 @@ public class HeaterDriverTest {
                     return "https://example.agentlab.ru/#Heater_1";
                 }
 
+                @Override
+                public String stateContext() {
+                    return "https://observations.agentlab.ru";
+                }
+
             });
             for (int i = 0; i < 5; ++i) {
                 hd.handleControlParameters(() -> Measure.valueOf(1000, SI.WATT));
