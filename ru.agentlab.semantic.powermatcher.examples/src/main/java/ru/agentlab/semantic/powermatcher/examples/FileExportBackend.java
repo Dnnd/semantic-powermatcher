@@ -9,7 +9,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class FileExportBackend implements ExporterBackend{
+public class FileExportBackend implements ExporterBackend {
     private final File exportTarget;
 
     public FileExportBackend(File exportTarget) {
@@ -18,8 +18,7 @@ public class FileExportBackend implements ExporterBackend{
 
     @Override
     public void exportData(RepositoryConnection source, Resource... context) {
-        try {
-            var writer = new FileWriter(exportTarget);
+        try (var writer = new FileWriter(exportTarget, false)) {
             var rdfHandler = Rio.createWriter(RDFFormat.TURTLE, writer);
             source.export(rdfHandler, context);
         } catch (IOException e) {

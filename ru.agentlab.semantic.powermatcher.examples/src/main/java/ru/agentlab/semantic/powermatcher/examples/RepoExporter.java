@@ -23,11 +23,10 @@ import java.util.concurrent.Executors;
 import static org.eclipse.rdf4j.model.util.Values.iri;
 
 @Component(
-        scope = ServiceScope.SINGLETON,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true
 )
-@Designate(ocd = RepoExporter.Config.class)
+@Designate(ocd = RepoExporter.Config.class, factory = true)
 public class RepoExporter {
 
     private SailRepository repository;

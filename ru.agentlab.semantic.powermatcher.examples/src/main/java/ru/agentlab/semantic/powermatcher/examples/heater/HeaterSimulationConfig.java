@@ -5,10 +5,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition
 public @interface HeaterSimulationConfig {
-    @AttributeDefinition(
-            description = "Resource identifier")
-    String resourceId() default "heater";
-
     @AttributeDefinition(description = "Heater Thing IRI")
     String thingIRI();
 

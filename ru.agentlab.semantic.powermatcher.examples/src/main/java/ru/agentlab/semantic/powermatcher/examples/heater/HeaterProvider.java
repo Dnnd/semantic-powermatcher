@@ -65,6 +65,12 @@ public class HeaterProvider {
 
     @Activate
     public void activate(HeaterSimulationConfig config) {
+        logger.info("Activating with stateContext={}, thingsContext={}, updateFrequency={}, thingIRI={}",
+                    config.stateContext(),
+                    config.thingContext(),
+                    config.updateFrequency(),
+                    config.thingIRI()
+        );
         ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         var interval = Duration.ofMillis(config.updateFrequency());
         var repoConn = repository.getConnection();
@@ -74,7 +80,7 @@ public class HeaterProvider {
         var actionAffordances = new ThingActionAffordanceRepository(context);
         var stateGraphContext = iri(config.stateContext());
 
-        subscription = populateThingModel(context, iri(config.stateContext()), iri(config.thingContext()))
+        subscription = populateThingModel(context, stateGraphContext, iri(config.thingContext()))
                 .then(things.getThing(iri(config.thingIRI())))
                 .flatMap(thing -> fetchInitialState(thing, propertyAffordances, actionAffordances))
                 .flatMapMany(state -> scheduleSimulation(context,

@@ -2,6 +2,7 @@ package ru.agentlab.semantic.powermatcher.examples.uncontrolled;
 
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.XSD;
@@ -34,6 +35,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
+import static ru.agentlab.semantic.powermatcher.examples.Utils.openResourceStream;
+import static ru.agentlab.semantic.powermatcher.vocabularies.Example.EXAMPLE_IRI;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.POWER;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
@@ -62,6 +65,7 @@ public class SemanticUncontrolledResourceSimulation {
         int intervalMsec() default 1000;
 
         String thingContext() default "";
+
         String stateContext() default "";
     }
 
@@ -79,8 +83,10 @@ public class SemanticUncontrolledResourceSimulation {
         ConnectionContext ctx = new ConnectionContext(executor, connection);
         var thingRepository = new ThingRepository(ctx);
         var propertyAffordanceRepository = new ThingPropertyAffordanceRepository(ctx);
+        var thingCtx = iri(config.thingContext());
+        var obsCtx = iri(config.stateContext());
 
-        subscription = Utils.supplyAsyncWithCancel(() -> populateThingModel(ctx), ctx.getExecutor())
+        subscription = Utils.supplyAsyncWithCancel(() -> populateThingModel(ctx, thingCtx, obsCtx), ctx.getExecutor())
                 .then(thingRepository.getThing(iri(config.thingIRI())))
                 .flatMapMany(thing -> propertyAffordanceRepository.getPropertyAffordancesWithType(thing, POWER))
                 .flatMap(affordance -> Flux.interval(Duration.ofMillis(config.intervalMsec()), scheduler)
@@ -89,7 +95,11 @@ public class SemanticUncontrolledResourceSimulation {
                     sailConn.close();
                     connection.close();
                 })
-                .subscribe(powerAffordance -> publishNewState(random.sample(), powerAffordance.getIRI(), connection));
+                .subscribe(powerAffordance -> publishNewState(random.sample(),
+                                                              powerAffordance.getIRI(),
+                                                              connection,
+                                                              obsCtx
+                ));
         logger.info("Starting semantic uncontrolled resource simulation...Done");
     }
 
@@ -98,26 +108,39 @@ public class SemanticUncontrolledResourceSimulation {
         this.subscription.dispose();
     }
 
-    private void populateThingModel(ConnectionContext ctx) {
-        try (var uncontrolledTTL = getClass().getClassLoader().getResourceAsStream(
-                "uncontrolled_initial_observations.ttl")) {
-            var model = Rio.parse(uncontrolledTTL, RDFFormat.TURTLE);
-            ctx.getConnection().add(model);
-        } catch (IOException exception) {
-            logger.error("unable to populate thing model", exception);
+    private void populateThingModel(ConnectionContext ctx, Resource thingCtx, Resource obsCtx) {
+        try (var conn = ctx.createConnection()) {
+            conn.begin();
+            try (var observations = openResourceStream("uncontrolled_initial_observations.ttl");
+                 var things = openResourceStream("uncontrolled_model.ttl")) {
+
+                var obsModel = Rio.parse(observations, RDFFormat.TURTLE);
+                var thingsModel = Rio.parse(things, RDFFormat.TURTLE);
+
+                conn.add(thingsModel, thingCtx);
+                conn.add(obsModel, obsCtx);
+
+                conn.commit();
+            } catch (Exception exception) {
+                conn.rollback();
+                logger.error("unable to populate thing model", exception);
+            }
         }
     }
 
-    private void publishNewState(double currentValue, IRI powerAffordanceIRI, RepositoryConnection conn) {
+    private void publishNewState(double currentValue,
+                                 IRI powerAffordanceIRI,
+                                 RepositoryConnection conn,
+                                 Resource stateContext) {
         logger.info("publishing new state: currentValue={}, powerAffordanceIRI={}", currentValue, powerAffordanceIRI);
-        IRI obsId = iri("https://example.agentlab.ru#" + UUID.randomUUID().toString());
+        IRI obsId = iri(EXAMPLE_IRI, UUID.randomUUID().toString());
         OffsetDateTime now = OffsetDateTime.now();
         String time = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         conn.begin();
-        conn.add(obsId, RDF.TYPE, PROPERTY_STATE);
-        conn.add(obsId, DESCRIBED_BY_AFFORDANCE, powerAffordanceIRI);
-        conn.add(obsId, HAS_VALUE, Values.literal(currentValue));
-        conn.add(obsId, MODIFIED, Values.literal(time, XSD.DATETIME));
+        conn.add(obsId, RDF.TYPE, PROPERTY_STATE, stateContext);
+        conn.add(obsId, DESCRIBED_BY_AFFORDANCE, powerAffordanceIRI, stateContext);
+        conn.add(obsId, HAS_VALUE, Values.literal(currentValue), stateContext);
+        conn.add(obsId, MODIFIED, Values.literal(time, XSD.DATETIME), stateContext);
         conn.commit();
     }
 }
