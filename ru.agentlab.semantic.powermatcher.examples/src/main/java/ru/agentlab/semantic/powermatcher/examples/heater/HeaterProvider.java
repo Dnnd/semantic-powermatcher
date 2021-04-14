@@ -78,16 +78,17 @@ public class HeaterProvider {
         ThingRepository things = new ThingRepository(context);
         var propertyAffordances = new ThingPropertyAffordanceRepository(context);
         var actionAffordances = new ThingActionAffordanceRepository(context);
-        var stateGraphContext = iri(config.stateContext());
+        var observationsContext = iri(config.stateContext());
+        var modelContext = iri(config.thingIRI());
 
-        subscription = populateThingModel(context, stateGraphContext, iri(config.thingContext()))
+        subscription = populateThingModel(context, observationsContext, modelContext)
                 .then(things.getThing(iri(config.thingIRI())))
                 .flatMap(thing -> fetchInitialState(thing, propertyAffordances, actionAffordances))
                 .flatMapMany(state -> scheduleSimulation(context,
                                                          actionAffordances,
                                                          state,
                                                          interval,
-                                                         stateGraphContext
+                                                         observationsContext
                 ))
                 .doFinally(signal -> context.close())
                 .subscribe();
@@ -177,7 +178,7 @@ public class HeaterProvider {
         conn.commit();
     }
 
-    private void populateThingModelSync(ConnectionContext context, Resource modelContext, Resource obsContext) {
+    private void populateThingModelSync(ConnectionContext context, Resource obsContext, Resource modelContext) {
         // use separate connection for multistage transactions
         try (var conn = context.createConnection()) {
             conn.begin();
