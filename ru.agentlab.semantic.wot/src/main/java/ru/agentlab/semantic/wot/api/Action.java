@@ -18,7 +18,7 @@ public interface Action<I, O, M extends Metadata<M>> {
     O getOutput();
 
     default Model toModel(Resource... context) {
-        var model = new LinkedHashModel();
+        var model = getMetadata().toModel(context);
         IRI invocationIRI = getMetadata().getIRI();
         var input = getInput();
         if (input != null) {
