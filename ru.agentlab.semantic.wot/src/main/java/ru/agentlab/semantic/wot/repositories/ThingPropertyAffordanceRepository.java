@@ -9,6 +9,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -30,8 +31,8 @@ import java.util.List;
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.select;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.tp;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.*;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_VALUE;
 
 public class ThingPropertyAffordanceRepository implements WotRepository {
     private final ConnectionContext context;
@@ -141,33 +142,38 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
         Variable value = var("value");
         Variable pred = var("pred");
         Variable subj = var("subj");
+        Variable resultType = var("resultType");
         var query = Queries.CONSTRUCT(
                 tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
-                tp(obs, MODIFIED, mostRecent),
-                tp(obs, HAS_VALUE, value),
+                tp(obs, RESULT_TIME, mostRecent),
+                tp(obs, resultType, value),
                 tp(obs, pred, subj)
         ).where(select(obs, Expressions.max(lastModified).as(mostRecent))
                         .where(tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
-                               tp(obs, MODIFIED, lastModified)
+                               tp(obs, RESULT_TIME, lastModified)
                         )
                         .groupBy(obs),
-                tp(obs, HAS_VALUE, value)
+                tp(obs, resultType, value)
+                        .filter(Expressions.in(resultType, Rdf.iri(HAS_RESULT), Rdf.iri(HAS_SIMPLE_RESULT))),
+                tp(obs, pred, subj)
         );
         conn.prepareGraphQuery(query.getQueryString()).evaluate().forEach(builder::process);
         return builder.build();
     }
 
     public <T, M extends Metadata<M>> Flux<Observation<T, M>> subscribeOnLatestObservations(ThingPropertyAffordance propertyAffordance,
+                                                                                            IRI resultType,
                                                                                             ObservationFactory<T, M> observationFactory,
                                                                                             Comparator<Observation<T, M>> comparator) {
-        return subscribeOnLatestObservations(propertyAffordance.getIRI(), observationFactory, comparator);
+        return subscribeOnLatestObservations(propertyAffordance.getIRI(), resultType, observationFactory, comparator);
     }
 
     public <T, M extends Metadata<M>> Flux<Observation<T, M>> subscribeOnLatestObservations(IRI propertyAffordanceIRI,
+                                                                                            IRI resultType,
                                                                                             ObservationFactory<T, M> observationFactory,
                                                                                             Comparator<Observation<T, M>> comparator) {
         var scheduler = Schedulers.fromExecutor(context.getExecutor());
-        ChangetrackingFilter filter = Utils.makeAffordanceObservationsFilter(propertyAffordanceIRI);
+        ChangetrackingFilter filter = Utils.makeObservationsFilter(propertyAffordanceIRI, resultType);
         var sailConn = (ChangeTrackerConnection) context.getSailConnection();
 
         return sailConn.events(scheduler)

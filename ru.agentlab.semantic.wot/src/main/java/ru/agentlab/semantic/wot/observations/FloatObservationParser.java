@@ -6,7 +6,7 @@ import ru.agentlab.semantic.wot.api.Observation;
 import ru.agentlab.semantic.wot.api.ObservationParser;
 import ru.agentlab.semantic.wot.api.MetadataParser;
 
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_VALUE;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
 
 public class FloatObservationParser<M extends Metadata<M>> implements ObservationParser<Float, M> {
     private final MetadataParser<M> metadataParser;
@@ -19,7 +19,7 @@ public class FloatObservationParser<M extends Metadata<M>> implements Observatio
     @Override
     public FloatObservationParser<M> process(Statement st) {
         metadataParser.process(st);
-        if (st.getPredicate().equals(HAS_VALUE)) {
+        if (st.getPredicate().equals(HAS_SIMPLE_RESULT)) {
             value = Float.parseFloat(st.getObject().stringValue());
         }
         return this;

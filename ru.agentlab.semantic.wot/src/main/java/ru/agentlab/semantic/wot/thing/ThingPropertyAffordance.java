@@ -20,6 +20,10 @@ public class ThingPropertyAffordance {
         this.model = model;
     }
 
+    public IRI getThingIRI() {
+        return thingIRI;
+    }
+
     public List<IRI> getTypes() {
         return types;
     }

@@ -19,14 +19,12 @@ public class Vocabularies {
     public static final IRI ADDRESS = iri(SCHEMA, "address");
 
     public static final IRI PROPERTY_AFFORDANCE = iri(WOT_IRI, "PropertyAffordance");
-    public static final IRI PROPERTY_STATE = iri(WOT_EXT_IRI, "PropertyState");
     public final static IRI ACTION_INVOCATION = iri(WOT_EXT_IRI, "ActionInvocation");
     public static final IRI DESCRIBED_BY = iri(WOT_EXT_IRI, "describedBy");
     public static final IRI HAS_PROPERTY_AFFORDANCE = iri(WOT_IRI, "hasPropertyAffordance");
     public static final IRI HAS_ACTION_AFFORDANCE = iri(WOT_IRI, "hasActionAffordance");
-    public static final IRI MODIFIED = iri(WOT_EXT_IRI, "modified");
     public static final IRI DESCRIBED_BY_AFFORDANCE = iri(WOT_EXT_IRI, "describedByAffordance");
-    public static final IRI HAS_VALUE = iri(WOT_EXT_IRI, "hasValue");
+
     public static final IRI HAS_INPUT = iri(WOT_EXT_IRI, "hasInput");
     public static final IRI HAS_OUTPUT = iri(WOT_EXT_IRI, "hasOutput");
     public static final IRI HAS_INPUT_SCHEMA = iri(WOT_IRI, "hasInputSchema");

@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.*;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.RESULT_TIME;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
 public class ThingActionAffordanceRepository implements WotRepository {
@@ -131,16 +132,16 @@ public class ThingActionAffordanceRepository implements WotRepository {
         Variable input = var("input");
         var query = Queries.CONSTRUCT(
                 tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
-                tp(invocation, MODIFIED, mostRecent),
+                tp(invocation, RESULT_TIME, mostRecent),
                 tp(invocation, HAS_INPUT, input),
                 tp(invocation, HAS_OUTPUT, output)
         ).where(
                 select(Expressions.max(lastModified).as(mostRecent)).where(
                         tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
-                        tp(invocation, MODIFIED, lastModified)
+                        tp(invocation, RESULT_TIME, lastModified)
                 ),
                 tp(invocation, DESCRIBED_BY_AFFORDANCE, actionAffordanceIRI),
-                tp(invocation, MODIFIED, mostRecent),
+                tp(invocation, RESULT_TIME, mostRecent),
                 optional(tp(invocation, HAS_INPUT, input)),
                 optional(tp(invocation, HAS_OUTPUT, output))
         );

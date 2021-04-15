@@ -1,7 +1,10 @@
 package ru.agentlab.semantic.wot.observations;
 
+import org.eclipse.rdf4j.model.IRI;
 import ru.agentlab.semantic.wot.api.Metadata;
 import ru.agentlab.semantic.wot.api.Observation;
+
+import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
 
 public class FloatObservation<M extends Metadata<M>> implements Observation<Float, M> {
     private final Float value;
@@ -24,6 +27,11 @@ public class FloatObservation<M extends Metadata<M>> implements Observation<Floa
     @Override
     public Float getValue() {
         return value;
+    }
+
+    @Override
+    public IRI getResultType() {
+        return HAS_SIMPLE_RESULT;
     }
 
     @Override

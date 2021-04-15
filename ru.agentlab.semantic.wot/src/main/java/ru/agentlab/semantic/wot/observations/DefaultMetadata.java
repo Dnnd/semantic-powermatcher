@@ -9,12 +9,14 @@ public class DefaultMetadata implements Metadata<DefaultMetadata> {
     private final IRI affordanceIRI;
     private final IRI subjectIRI;
     private final IRI type;
+    private final IRI thingIRI;
     private final OffsetDateTime lastModified;
 
-    public DefaultMetadata(IRI affordanceIRI, IRI subjectIRI, OffsetDateTime lastModified, IRI type) {
+    public DefaultMetadata(IRI affordanceIRI, IRI subjectIRI, IRI thingIRI, OffsetDateTime lastModified, IRI type) {
         this.affordanceIRI = affordanceIRI;
         this.subjectIRI = subjectIRI;
         this.lastModified = lastModified;
+        this.thingIRI = thingIRI;
         this.type = type;
     }
 
@@ -26,6 +28,11 @@ public class DefaultMetadata implements Metadata<DefaultMetadata> {
     @Override
     public IRI getAffordanceIRI() {
         return affordanceIRI;
+    }
+
+    @Override
+    public IRI getThingIRI() {
+        return thingIRI;
     }
 
     @Override

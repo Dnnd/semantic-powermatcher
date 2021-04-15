@@ -11,6 +11,8 @@ import org.eclipse.rdf4j.model.vocabulary.XSD;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
+import static ru.agentlab.semantic.wot.vocabularies.SSN.OBSERVED_PROPERTY;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.RESULT_TIME;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
 public interface Metadata<M> {
@@ -19,13 +21,15 @@ public interface Metadata<M> {
         Model model = new LinkedHashModel();
         model.add(getIRI(), RDF.TYPE, getType(), context);
         model.add(getIRI(), DESCRIBED_BY_AFFORDANCE, getAffordanceIRI(), context);
-        model.add(getIRI(), MODIFIED, Values.literal(lastModifiedLiteral, XSD.DATETIME), context);
+        model.add(getIRI(), RESULT_TIME, Values.literal(lastModifiedLiteral, XSD.DATETIME), context);
         return model;
     }
 
     IRI getIRI();
 
     IRI getAffordanceIRI();
+
+    IRI getThingIRI();
 
     OffsetDateTime getLastModified();
 

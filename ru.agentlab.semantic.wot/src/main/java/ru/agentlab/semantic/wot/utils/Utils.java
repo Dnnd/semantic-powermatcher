@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
+import static ru.agentlab.semantic.wot.vocabularies.SSN.*;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
 public class Utils {
@@ -43,15 +44,15 @@ public class Utils {
                 .orElseGet(Mono::empty);
     }
 
-    public static ChangetrackingFilter makeAffordanceObservationsFilter(IRI affordanceIRI) {
+    public static ChangetrackingFilter makeObservationsFilter(IRI affordanceIRI, IRI resultType) {
         return ChangetrackingFilter.builder()
                 .addPattern(null,
                             DESCRIBED_BY_AFFORDANCE,
                             affordanceIRI,
                             ChangetrackingFilter.Filtering.ADDED
                 )
-                .addPattern(null, HAS_VALUE, null, ChangetrackingFilter.Filtering.ADDED)
-                .addPattern(null, MODIFIED, null, ChangetrackingFilter.Filtering.ADDED)
+                .addPattern(null, resultType, null, ChangetrackingFilter.Filtering.ADDED)
+                .addPattern(null, RESULT_TIME, null, ChangetrackingFilter.Filtering.ADDED)
                 .build();
     }
 

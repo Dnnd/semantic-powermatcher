@@ -7,7 +7,7 @@ import ru.agentlab.semantic.wot.api.Observation;
 import ru.agentlab.semantic.wot.api.ObservationParser;
 import ru.agentlab.semantic.wot.api.MetadataParser;
 
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_VALUE;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_RESULT;
 
 public class IRIObservationParser<M extends Metadata<M>> implements ObservationParser<IRI, M> {
     private final MetadataParser<M> metadataParser;
@@ -21,7 +21,7 @@ public class IRIObservationParser<M extends Metadata<M>> implements ObservationP
     @Override
     public ObservationParser<IRI, M> process(Statement st) {
         metadataParser.process(st);
-        if (st.getPredicate().equals(HAS_VALUE)) {
+        if (st.getPredicate().equals(HAS_RESULT)) {
             value = (IRI) st.getObject();
         }
         return this;
