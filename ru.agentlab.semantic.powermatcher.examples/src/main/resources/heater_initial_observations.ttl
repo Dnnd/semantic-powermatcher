@@ -11,6 +11,8 @@
 @prefix saref:      <https://w3id.org/saref#> .
 @prefix ex:         <https://example.agentlab.ru/#> .
 @prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sosa:       <http://www.w3.org/ns/sosa/> .
+@prefix ssn:        <http://www.w3.org/ns/ssn/>.
 
 ex:House_1
   a schema:Place ;
@@ -27,27 +29,32 @@ ex:House_1
   ].
 
 ex:Heater_1_IndoorTemperature_Observation_1
-  a tdx:PropertyState ;
-  tdx:hasValue "10"^^xsd:double ;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:Heater_1_IndoorTemperature.
+  a sosa:Observation ;
+  sosa:hasSimpleResult "10"^^xsd:double ;
+  sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
+  tdx:describedByAffordance ex:Heater_1_IndoorTemperature ;
+  sosa:observedProperty ex:Heater_1_IndoorTemperature.
 
 
 ex:Heater_1_LocationAffordance_Observation_1
-  a tdx:PropertyState ;
-  tdx:hasValue ex:House_1 ;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:Heater_1_LocationAffordance.
+  a sosa:Observation ;
+  sosa:hasResult ex:House_1 ;
+  sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
+  tdx:describedByAffordance ex:Heater_1_LocationAffordance ;
+  sosa:madeBySensor ex:Heater_1 ;
+  sosa:observedProperty ex:Heater_1_IndoorTemperature.
 
 ex:Heater_1_OutdoorTemperature_Observation_1
-  a tdx:PropertyState ;
-  tdx:hasValue "10"^^xsd:double ;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
+  a sosa:Observation ;
+  sosa:hasSimpleResult "10"^^xsd:double ;
+  sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
+  sosa:madeBySensor ex:Heater_1 ;
   tdx:describedByAffordance ex:Heater_1_OutdoorTemperature.
 
 
 ex:Heater_1_PowerDemand_Observation_1
-  a tdx:PropertyState ;
-  tdx:hasValue "10"^^xsd:double ;
-  tdx:modified "2021-03-10T01:01Z"^^xsd:dateTime ;
+  a sosa:Observation ;
+  sosa:hasSimpleResult "10"^^xsd:double ;
+  sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
+  sosa:madeBySensor ex:Heater_1 ;
   tdx:describedByAffordance ex:Heater_1_PowerDemand.
