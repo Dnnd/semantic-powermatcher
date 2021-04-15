@@ -39,7 +39,7 @@ public class RepoExporter {
     }
 
     @ObjectClassDefinition
-    @interface Config {
+    public @interface Config {
         long interval() default 60;
 
         String unit() default "SECONDS";

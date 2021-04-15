@@ -25,6 +25,7 @@ public class UncontrolledDriverTest {
             SailRepository repository = (SailRepository) conn.getRepository();
             driver.bindRepository(() -> repository);
             simulation.bindSailRepository(() -> repository);
+
             simulation.activate(new SemanticUncontrolledResourceSimulation.Config() {
 
                 @Override

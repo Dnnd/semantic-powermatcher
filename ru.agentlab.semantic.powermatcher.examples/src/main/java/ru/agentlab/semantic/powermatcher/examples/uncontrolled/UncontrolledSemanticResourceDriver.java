@@ -39,6 +39,8 @@ import java.util.concurrent.Executors;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.POWER;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.RESULT_TIME;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
 @Component(
@@ -106,12 +108,12 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
 
         this.subscription = thingRepository.getThing(iri(config.thingIRI()))
                 .flatMapMany(thing -> propertyAffordanceRepository.getPropertyAffordancesWithType(thing, POWER))
-                .flatMap(powerProp -> {
-                    logger.info("observing {}", powerProp.getIRI());
-                    var powerPropObservationFilter = createObservationFilterForProperty(powerProp.getIRI());
-                    return sailConn.events(scheduler)
-                            .flatMap(changes -> extractLatestObservation(changes, powerPropObservationFilter));
-                })
+                .flatMap(powerProp -> propertyAffordanceRepository.subscribeOnLatestObservations(
+                        powerProp,
+                        HAS_SIMPLE_RESULT,
+                        (obsIRI) -> new FloatObservationParser<>(new DefaultMetadataParser(obsIRI)),
+                        Comparator.comparing(observation -> observation.getMetadata().getLastModified())
+                ))
                 .doFinally(signal -> {
                     thingRepository.cancel();
                     propertyAffordanceRepository.cancel();
@@ -123,36 +125,6 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
                     publishState(new State(powerOutputObservation.getValue()));
                 });
         logger.info("Uncontrolled semantic resource driver...Done");
-    }
-
-    private static Mono<Observation<Float, DefaultMetadata>> extractLatestObservation(TransactionChanges changes, ChangetrackingFilter modelFilter) {
-        Map<IRI, Model> modelsBySubject = Transformations.groupBySubject(changes.getAddedStatements());
-        return modelsBySubject.entrySet()
-                .stream()
-                .flatMap(entity -> {
-                    IRI observationIRI = entity.getKey();
-                    Model observationModel = entity.getValue();
-                    return modelFilter.matchModel(observationModel)
-                            .map(model -> createObservation(observationIRI, observationModel))
-                            .stream();
-                })
-                .max(Comparator.comparing(observation -> observation.getMetadata().getLastModified()))
-                .map(Mono::just)
-                .orElseGet(Mono::empty);
-    }
-
-    private static Observation<Float, DefaultMetadata> createObservation(IRI observationIRI, Model observationModel) {
-        var metadataBuilder = new DefaultMetadataParser(observationIRI);
-        var observationBuilder = new FloatObservationParser<>(metadataBuilder);
-        return observationBuilder.processAll(observationModel).build();
-    }
-
-    private static ChangetrackingFilter createObservationFilterForProperty(IRI property) {
-        return ChangetrackingFilter.builder()
-                .addPattern(null, DESCRIBED_BY_AFFORDANCE, property, ChangetrackingFilter.Filtering.ADDED)
-                .addPattern(null, HAS_VALUE, null, ChangetrackingFilter.Filtering.ADDED)
-                .addPattern(null, MODIFIED, null, ChangetrackingFilter.Filtering.ADDED)
-                .build();
     }
 
     @Modified

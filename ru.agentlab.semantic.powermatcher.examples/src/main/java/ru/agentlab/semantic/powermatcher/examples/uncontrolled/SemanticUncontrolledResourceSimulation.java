@@ -21,9 +21,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
+import ru.agentlab.semantic.wot.observations.DefaultMetadata;
+import ru.agentlab.semantic.wot.observations.FloatObservation;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
+import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
 import ru.agentlab.semantic.wot.utils.Utils;
 
 import java.io.IOException;
@@ -38,6 +41,7 @@ import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.examples.Utils.openResourceStream;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.EXAMPLE_IRI;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.POWER;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.OBSERVATION;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
 @Component(
@@ -96,7 +100,7 @@ public class SemanticUncontrolledResourceSimulation {
                     connection.close();
                 })
                 .subscribe(powerAffordance -> publishNewState(random.sample(),
-                                                              powerAffordance.getIRI(),
+                                                              powerAffordance,
                                                               connection,
                                                               obsCtx
                 ));
@@ -129,18 +133,23 @@ public class SemanticUncontrolledResourceSimulation {
     }
 
     private void publishNewState(double currentValue,
-                                 IRI powerAffordanceIRI,
+                                 ThingPropertyAffordance powerAffordance,
                                  RepositoryConnection conn,
                                  Resource stateContext) {
-        logger.info("publishing new state: currentValue={}, powerAffordanceIRI={}", currentValue, powerAffordanceIRI);
+        logger.info("publishing new state: currentValue={}, powerAffordanceIRI={}", currentValue, powerAffordance);
         IRI obsId = iri(EXAMPLE_IRI, UUID.randomUUID().toString());
-        OffsetDateTime now = OffsetDateTime.now();
-        String time = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        var obs = new FloatObservation<DefaultMetadata>((float) currentValue);
+        obs.setMetadata(
+                new DefaultMetadata(
+                        powerAffordance.getIRI(),
+                        obsId,
+                        powerAffordance.getThingIRI(),
+                        OffsetDateTime.now(),
+                        OBSERVATION
+                )
+        );
         conn.begin();
-        conn.add(obsId, RDF.TYPE, PROPERTY_STATE, stateContext);
-        conn.add(obsId, DESCRIBED_BY_AFFORDANCE, powerAffordanceIRI, stateContext);
-        conn.add(obsId, HAS_VALUE, Values.literal(currentValue), stateContext);
-        conn.add(obsId, MODIFIED, Values.literal(time, XSD.DATETIME), stateContext);
+        conn.add(obs.toModel(stateContext));
         conn.commit();
     }
 }

@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.*;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
 @Component(
@@ -164,12 +165,14 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
                 .latestObservation(heatingPower, floatObservationsFactory)
                 .concatWith(propertyAffordances.subscribeOnLatestObservations(
                         heatingPower,
+                        HAS_SIMPLE_RESULT,
                         floatObservationsFactory,
                         lastModifiedComparator
                 ));
 
         return propertyAffordances.subscribeOnLatestObservations(
                 indoorTemperature,
+                HAS_SIMPLE_RESULT,
                 floatObservationsFactory,
                 lastModifiedComparator
         ).withLatestFrom(heatingPowerUpdates,
@@ -187,6 +190,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
         setter.setMetadata(new DefaultMetadata(
                 affordance.getIRI(),
                 actionInvocation,
+                affordance.getThingIRI(),
                 now,
                 ACTION_INVOCATION
         ));

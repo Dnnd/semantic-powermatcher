@@ -22,19 +22,21 @@ import reactor.core.scheduler.Schedulers;
 import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.actions.FloatSetterParser;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
-import ru.agentlab.semantic.wot.observations.*;
+import ru.agentlab.semantic.wot.thing.Thing;
+import ru.agentlab.semantic.wot.observations.DefaultMetadata;
+import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
+import ru.agentlab.semantic.wot.observations.FloatObservation;
+import ru.agentlab.semantic.wot.observations.FloatObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
-import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingActionAffordance;
 import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
 import ru.agentlab.semantic.wot.utils.Utils;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,7 +44,7 @@ import java.util.concurrent.Executors;
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.examples.Utils.openResourceStream;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.*;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.*;
 
 @Component(
         service = {HeaterProvider.class},
@@ -79,7 +81,7 @@ public class HeaterProvider {
         var propertyAffordances = new ThingPropertyAffordanceRepository(context);
         var actionAffordances = new ThingActionAffordanceRepository(context);
         var observationsContext = iri(config.stateContext());
-        var modelContext = iri(config.thingIRI());
+        var modelContext = iri(config.thingContext());
 
         subscription = populateThingModel(context, observationsContext, modelContext)
                 .then(things.getThing(iri(config.thingIRI())))
@@ -94,11 +96,20 @@ public class HeaterProvider {
                 .subscribe();
     }
 
+
     private Building fetchLocationBuilding(Thing building) {
-        var len = building.getProperty(LENGTH).map(Value::stringValue).map(Float::parseFloat).orElseThrow();
-        var height = building.getProperty(HEIGHT).map(Value::stringValue).map(Float::parseFloat).orElseThrow();
-        var width = building.getProperty(WIDTH).map(Value::stringValue).map(Float::parseFloat).orElseThrow();
-        return new Building(len, width, height);
+        return building.getProperty(LENGTH)
+                .map(Value::stringValue)
+                .map(Float::parseFloat)
+                .flatMap(len -> building.getProperty(HEIGHT)
+                        .map(Value::stringValue)
+                        .map(Float::parseFloat)
+                        .flatMap(height -> building.getProperty(WIDTH)
+                                .map(Value::stringValue)
+                                .map(Float::parseFloat)
+                                .map(width -> new Building(len, width, height))
+                        )
+                ).orElseThrow();
     }
 
     private Flux<Void> scheduleSimulation(ConnectionContext context,
@@ -128,15 +139,17 @@ public class HeaterProvider {
     }
 
     private Model makeFloatObservation(ThingPropertyAffordance affordance, double value, Resource... obsContext) {
-        Model model = new LinkedHashModel();
-        OffsetDateTime now = OffsetDateTime.now();
-        String time = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         IRI observationIRI = iri(EXAMPLE_IRI, UUID.randomUUID().toString());
-        model.add(observationIRI, RDF.TYPE, PROPERTY_STATE, obsContext);
-        model.add(observationIRI, DESCRIBED_BY_AFFORDANCE, affordance.getIRI(), obsContext);
-        model.add(observationIRI, HAS_VALUE, Values.literal(value), obsContext);
-        model.add(observationIRI, MODIFIED, Values.literal(time, XSD.DATETIME), obsContext);
-        return model;
+        var obs = new FloatObservation<DefaultMetadata>((float) value);
+        obs.setMetadata(new DefaultMetadata(
+                                affordance.getIRI(),
+                                observationIRI,
+                                affordance.getThingIRI(),
+                                OffsetDateTime.now(),
+                                OBSERVATION
+                        )
+        );
+        return obs.toModel(obsContext);
     }
 
     private Mono<Void> publishNewState(ConnectionContext context, HeaterSimulationTwin state, Resource... stateContext) {

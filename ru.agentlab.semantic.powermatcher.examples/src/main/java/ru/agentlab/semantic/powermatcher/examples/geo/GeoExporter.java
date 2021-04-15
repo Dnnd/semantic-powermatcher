@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_RESULT;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.PLACE;
 
 @Component
@@ -75,6 +76,7 @@ public class GeoExporter {
                     );
                     return latestObs.concatWith(props.subscribeOnLatestObservations(
                             locationAffordance.getIRI(),
+                            HAS_RESULT,
                             iriObsBuilderFactory,
                             byLastModified
                     ));
