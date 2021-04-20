@@ -1,4 +1,4 @@
-package ru.agentlab.semantic.powermatcher.examples.uncontrolled;
+package ru.agentlab.semantic.wot.services.api;
 
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 
