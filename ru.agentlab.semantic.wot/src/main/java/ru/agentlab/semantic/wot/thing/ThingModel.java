@@ -1,10 +1,16 @@
 package ru.agentlab.semantic.wot.thing;
 
-public class ThingModel {
-    private ConnectionContext context;
+import org.eclipse.rdf4j.model.IRI;
 
-    public ConnectionContext getContext() {
-        return this.context;
+public class ThingModel {
+    private final IRI thingModelIRI;
+
+    public ThingModel(IRI thingModelIRI) {
+        this.thingModelIRI = thingModelIRI;
+    }
+
+    public IRI getThingModelIRI() {
+        return thingModelIRI;
     }
 
 }

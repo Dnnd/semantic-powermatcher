@@ -12,7 +12,6 @@ import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import ru.agentlab.changetracking.filter.ChangetrackingFilter;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.semantic.wot.api.Metadata;
@@ -161,22 +160,23 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
         return builder.build();
     }
 
-    public <T, M extends Metadata<M>> Flux<Observation<T, M>> subscribeOnLatestObservations(ThingPropertyAffordance propertyAffordance,
-                                                                                            IRI resultType,
-                                                                                            ObservationFactory<T, M> observationFactory,
-                                                                                            Comparator<Observation<T, M>> comparator) {
+    public <T, M extends Metadata<M>> Flux<Observation<T, M>>
+    subscribeOnLatestObservations(ThingPropertyAffordance propertyAffordance,
+                                  IRI resultType,
+                                  ObservationFactory<T, M> observationFactory,
+                                  Comparator<Observation<T, M>> comparator) {
         return subscribeOnLatestObservations(propertyAffordance.getIRI(), resultType, observationFactory, comparator);
     }
 
-    public <T, M extends Metadata<M>> Flux<Observation<T, M>> subscribeOnLatestObservations(IRI propertyAffordanceIRI,
-                                                                                            IRI resultType,
-                                                                                            ObservationFactory<T, M> observationFactory,
-                                                                                            Comparator<Observation<T, M>> comparator) {
-        var scheduler = Schedulers.fromExecutor(context.getExecutor());
+    public <T, M extends Metadata<M>> Flux<Observation<T, M>>
+    subscribeOnLatestObservations(IRI propertyAffordanceIRI,
+                                  IRI resultType,
+                                  ObservationFactory<T, M> observationFactory,
+                                  Comparator<Observation<T, M>> comparator) {
         ChangetrackingFilter filter = Utils.makeObservationsFilter(propertyAffordanceIRI, resultType);
         var sailConn = (ChangeTrackerConnection) context.getSailConnection();
 
-        return sailConn.events(scheduler)
+        return sailConn.events(context.getScheduler())
                 .flatMap(changes -> Utils.extractLatestObservation(
                         changes,
                         observationFactory,

@@ -1,7 +1,5 @@
 package ru.agentlab.semantic.powermatcher.examples.uncontrolled;
 
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.flexiblepower.messaging.Endpoint;
@@ -13,15 +11,9 @@ import org.osgi.service.component.annotations.*;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import reactor.core.Disposable;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import ru.agentlab.changetracking.filter.ChangetrackingFilter;
-import ru.agentlab.changetracking.filter.Transformations;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
-import ru.agentlab.changetracking.sail.TransactionChanges;
-import ru.agentlab.semantic.wot.api.Observation;
-import ru.agentlab.semantic.wot.observations.DefaultMetadata;
 import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.FloatObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
@@ -33,15 +25,12 @@ import javax.measure.Measure;
 import javax.measure.quantity.Power;
 import javax.measure.unit.SI;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.POWER;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
-import static ru.agentlab.semantic.wot.vocabularies.SSN.RESULT_TIME;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
 @Component(
         name = "ru.agentlab.semantic.powermatcher.UncontrolledSemanticResourceDriver",

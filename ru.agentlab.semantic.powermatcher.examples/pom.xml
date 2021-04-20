@@ -16,6 +16,18 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.cmpn</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.annotation</artifactId>
+        </dependency>
+        <dependency>
             <groupId>ru.agentlab</groupId>
             <artifactId>ru.agentlab.semantic.wot</artifactId>
             <version>1.0-SNAPSHOT</version>
@@ -53,7 +65,6 @@
             <groupId>ru.agentlab</groupId>
             <artifactId>changetracking-sail</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-launcher</artifactId>
@@ -65,6 +76,11 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <version>5.7.1</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ru.agentlab</groupId>
+            <artifactId>ru.agentlab.semantic.wot.services</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <build>

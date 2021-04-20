@@ -3,9 +3,6 @@ package ru.agentlab.semantic.powermatcher.examples.uncontrolled;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.util.Values;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
@@ -25,14 +22,13 @@ import ru.agentlab.semantic.wot.observations.DefaultMetadata;
 import ru.agentlab.semantic.wot.observations.FloatObservation;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
+import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
 import ru.agentlab.semantic.wot.utils.Utils;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,7 +38,6 @@ import static ru.agentlab.semantic.powermatcher.examples.Utils.openResourceStrea
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.EXAMPLE_IRI;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.POWER;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.OBSERVATION;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
 
 @Component(
         name = "ru.agentlab.semantic.powermatcher.SemanticUncontrolledResourceSimulation",

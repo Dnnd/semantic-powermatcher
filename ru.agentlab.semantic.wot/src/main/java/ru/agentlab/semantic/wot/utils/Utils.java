@@ -85,12 +85,4 @@ public class Utils {
                 });
     }
 
-    public static void filterStatements(Iterable<Statement> statements, IRI targetIRI, Model target, List<IRI> types) {
-        for (var st : statements) {
-            target.add(st);
-            if (st.getPredicate().equals(RDF.TYPE)) {
-                types.add((IRI) st.getObject());
-            }
-        }
-    }
 }

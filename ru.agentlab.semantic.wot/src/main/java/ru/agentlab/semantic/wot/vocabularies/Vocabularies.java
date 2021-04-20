@@ -24,6 +24,8 @@ public class Vocabularies {
     public static final IRI HAS_PROPERTY_AFFORDANCE = iri(WOT_IRI, "hasPropertyAffordance");
     public static final IRI HAS_ACTION_AFFORDANCE = iri(WOT_IRI, "hasActionAffordance");
     public static final IRI DESCRIBED_BY_AFFORDANCE = iri(WOT_EXT_IRI, "describedByAffordance");
+    public static final IRI HAS_THING_MODEL = iri(WOT_EXT_IRI, "hasThingModel");
+    public static final IRI THING = iri(WOT_IRI, "Thing");
 
     public static final IRI HAS_INPUT = iri(WOT_EXT_IRI, "hasInput");
     public static final IRI HAS_OUTPUT = iri(WOT_EXT_IRI, "hasOutput");
