@@ -7,7 +7,6 @@ import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
-import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -19,33 +18,29 @@ import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.utils.Utils;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.tp;
 import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.ADDED;
-import static ru.agentlab.semantic.wot.services.repositories.WOT_SERVICES.*;
+import static ru.agentlab.semantic.wot.services.repositories.WotServicesVocabulary.*;
 
 public class ThingServiceImplementationRepository {
     private final ConnectionContext context;
-    private final Logger logger = LoggerFactory.getLogger(ThingServiceImplementation.class);
 
     public ThingServiceImplementationRepository(ConnectionContext context) {
         this.context = context;
     }
 
-    Flux<ThingServiceImplementation> discoverThingServiceImplementations() {
+    public Flux<ThingServiceImplementation> discoverThingServiceImplementations() {
         return Utils.supplyAsyncWithCancel(this::fetchThingServiceImplementationsSync, context.getExecutor())
                     .flatMapMany(Flux::fromStream)
                     .concatWith(subscribeOnNewThingServices());
     }
 
-    Flux<ThingServiceImplementation> subscribeOnNewThingServices() {
+    public Flux<ThingServiceImplementation> subscribeOnNewThingServices() {
         var conn = (ChangeTrackerConnection) context.getSailConnection();
         var filter = ChangetrackingFilter.builder()
                                          .addPattern(null, RDF.TYPE, THING_SERVICE_IMPLEMENTATION, ADDED)
@@ -60,7 +55,7 @@ public class ThingServiceImplementationRepository {
                    ));
     }
 
-    Stream<ThingServiceImplementation> fetchThingServiceImplementationsSync() {
+    public Stream<ThingServiceImplementation> fetchThingServiceImplementationsSync() {
         SailRepositoryConnection connection = context.getConnection();
         Variable implIRI = var("implIRI");
         Variable confID = var("confID");

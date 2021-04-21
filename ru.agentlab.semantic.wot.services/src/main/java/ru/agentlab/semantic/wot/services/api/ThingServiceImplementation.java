@@ -4,44 +4,56 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
 
-import static ru.agentlab.semantic.wot.services.repositories.WOT_SERVICES.*;
+import static ru.agentlab.semantic.wot.services.repositories.WotServicesVocabulary.*;
 
 public class ThingServiceImplementation {
-    private final IRI modelIRI;
-    private final IRI configurationID;
-    private final IRI bundleID;
 
-    public ThingServiceImplementation(IRI modelIRI, IRI configurationID, IRI bundleID) {
+    private final IRI modelIRI;
+    private final String configurationID;
+    private final String bundleID;
+    private final ServiceType serviceType;
+
+    public ThingServiceImplementation(IRI modelIRI, String configurationID, String bundleID, ServiceType serviceType) {
         this.modelIRI = modelIRI;
         this.configurationID = configurationID;
         this.bundleID = bundleID;
+        this.serviceType = serviceType;
     }
 
     public IRI getModelIRI() {
         return modelIRI;
     }
 
-    public IRI getConfigurationID() {
+    public String getConfigurationID() {
         return configurationID;
     }
 
-    public IRI getBundleID() {
+    public String getBundleID() {
         return bundleID;
+    }
+
+    public ServiceType getServiceType() {
+        return serviceType;
     }
 
     public static class Builder {
         private IRI modelIRI;
-        private IRI configurationID;
-        private IRI bundleID;
+        private String configurationID;
+        private String bundleID;
+        private ServiceType serviceType;
 
         public Builder processStatement(Statement statement) {
             var pred = statement.getPredicate();
             if (pred.equals(CONFIGURATION_ID)) {
-                configurationID = (IRI) statement.getObject();
+                configurationID = statement.getObject().stringValue();
             } else if (pred.equals(BUNDLE_ID)) {
-                bundleID = (IRI) statement.getObject();
+                bundleID = statement.getObject().stringValue();
             } else if (pred.equals(MODEL_IRI)) {
                 modelIRI = (IRI) statement.getObject();
+            } else if (pred.equals(SERVICE_TYPE) && statement.getObject().equals(FACTORY)) {
+                serviceType = ServiceType.FACTORY;
+            } else if (pred.equals(SERVICE_TYPE) && statement.getObject().equals(SINGLETON)) {
+                serviceType = ServiceType.SINGLETON;
             }
             return this;
         }
@@ -56,18 +68,23 @@ public class ThingServiceImplementation {
             return this;
         }
 
-        public Builder setConfigurationID(IRI configurationID) {
+        public Builder setConfigurationID(String configurationID) {
             this.configurationID = configurationID;
             return this;
         }
 
-        public Builder setBundleID(IRI bundleID) {
+        public Builder setBundleID(String bundleID) {
             this.bundleID = bundleID;
             return this;
         }
 
+        public Builder setServiceType(ServiceType serviceType) {
+            this.serviceType = serviceType;
+            return this;
+        }
+
         public ThingServiceImplementation build() {
-            return new ThingServiceImplementation(modelIRI, configurationID, bundleID);
+            return new ThingServiceImplementation(modelIRI, configurationID, bundleID, serviceType);
         }
     }
 }
