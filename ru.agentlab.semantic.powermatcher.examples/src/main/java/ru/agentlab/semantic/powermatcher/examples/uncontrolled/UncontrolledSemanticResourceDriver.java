@@ -18,6 +18,7 @@ import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.FloatObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
+import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 
 import javax.measure.Measurable;
@@ -43,7 +44,6 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
 
     private SailRepository repository;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final Scheduler scheduler = Schedulers.fromExecutorService(executor);
     private Disposable subscription;
 
     @ObjectClassDefinition(
