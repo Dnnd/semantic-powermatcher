@@ -14,9 +14,6 @@ import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingModel;
 import ru.agentlab.semantic.wot.utils.Utils;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.ADDED;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_THING_MODEL;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.THING;
@@ -29,26 +26,30 @@ public class ThingRepository implements WotRepository {
         this.context = context;
     }
 
-    public Flux<Thing> discoverDeploymentsOf(ThingModel model) {
+    public Flux<Thing> discoverDeploymentsOf(IRI thingModelIRI) {
         var filter = ChangetrackingFilter.builder()
-                .addPattern(null, HAS_THING_MODEL, model.getThingModelIRI(), ADDED)
-                .addPattern(null, RDF.TYPE, THING, ADDED)
-                .build();
+                                         .addPattern(null, HAS_THING_MODEL, thingModelIRI, ADDED)
+                                         .addPattern(null, RDF.TYPE, THING, ADDED)
+                                         .build();
         var conn = (ChangeTrackerConnection) context.getSailConnection();
         return conn.events(context.getScheduler())
-                .handle((changes, sink) -> {
-                    var added = Transformations.groupBySubject(changes.getAddedStatements());
-                    added.entrySet()
+                   .handle((changes, sink) -> {
+                       var added = Transformations.groupBySubject(changes.getAddedStatements());
+                       added.entrySet()
                             .stream()
                             .flatMap(entry -> {
                                 var maybeThingIRI = entry.getKey();
                                 var maybeThingDescription = entry.getValue();
                                 return filter.matchModel(maybeThingDescription)
-                                        .map(thingDescription -> new Thing(maybeThingIRI, thingDescription))
-                                        .stream();
+                                             .map(thingDescription -> new Thing(maybeThingIRI, thingDescription))
+                                             .stream();
                             })
                             .forEach(sink::next);
-                });
+                   });
+    }
+
+    public Flux<Thing> discoverDeploymentsOf(ThingModel model) {
+        return discoverDeploymentsOf(model.getThingModelIRI());
     }
 
     public Mono<Thing> getThing(IRI thingIRI) {
