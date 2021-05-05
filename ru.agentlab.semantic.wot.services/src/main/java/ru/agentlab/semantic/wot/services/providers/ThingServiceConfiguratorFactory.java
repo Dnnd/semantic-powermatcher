@@ -35,11 +35,10 @@ public class ThingServiceConfiguratorFactory {
     private Disposable subscription;
     private final Map<ThingServiceConfiguratorConfig, Configuration> configurations = new ConcurrentHashMap<>();
     private final static Logger logger = LoggerFactory.getLogger(ThingServiceConfiguratorFactory.class);
+    private volatile Config config;
 
     @ObjectClassDefinition
     public @interface Config {
-
-        // TODO: actually use this property
         boolean deactivateConfiguratorsOnDeactivate() default true;
     }
 
@@ -56,6 +55,7 @@ public class ThingServiceConfiguratorFactory {
     @Activate
     public void activate(Config config) {
         logger.info("Activating configurators factory...");
+        this.config = config;
         var executor = Executors.newSingleThreadExecutor();
         var connCtx = new ConnectionContext(executor, repository.getConnection());
 
@@ -143,15 +143,21 @@ public class ThingServiceConfiguratorFactory {
         }
     }
 
-    @Deactivate
-    public void deactivate() {
-        subscription.dispose();
+    private void deactivateConfigurators() {
         for (Configuration configuration : configurations.values()) {
             try {
                 configuration.delete();
             } catch (IOException e) {
                 logger.info("Unable to deactivate {}", configuration.getPid());
             }
+        }
+    }
+
+    @Deactivate
+    public void deactivate() {
+        subscription.dispose();
+        if (config.deactivateConfiguratorsOnDeactivate()) {
+            deactivateConfigurators();
         }
     }
 }
