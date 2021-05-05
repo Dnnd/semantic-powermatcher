@@ -63,21 +63,21 @@ public class GeoExporter {
                 new IRIObservationParser<>(new DefaultMetadataParser(obsIRI));
 
         return props.discoverPropertyAffordancesWithType(PLACE)
-                .flatMap(locationAffordance -> {
-                    var latestObs = props.latestObservation(
-                            locationAffordance.getIRI(),
-                            iriObsBuilderFactory
-                    );
-                    Comparator<Observation<IRI, DefaultMetadata>> byLastModified = Comparator.comparing(
-                            obs -> obs.getMetadata().getLastModified()
-                    );
-                    return latestObs.concatWith(props.subscribeOnLatestObservations(
-                            locationAffordance.getIRI(),
-                            HAS_RESULT,
-                            iriObsBuilderFactory,
-                            byLastModified
-                    ));
-                });
+                    .flatMap(locationAffordance -> {
+                        var latestObs = props.latestObservation(
+                                locationAffordance.getIRI(),
+                                iriObsBuilderFactory
+                        );
+                        Comparator<Observation<IRI, DefaultMetadata>> byLastModified = Comparator.comparing(
+                                obs -> obs.getMetadata().getLastModified()
+                        );
+                        return latestObs.concatWith(props.subscribeOnLatestObservations(
+                                locationAffordance.getIRI(),
+                                HAS_RESULT,
+                                iriObsBuilderFactory,
+                                byLastModified
+                        ));
+                    });
     }
 
 }

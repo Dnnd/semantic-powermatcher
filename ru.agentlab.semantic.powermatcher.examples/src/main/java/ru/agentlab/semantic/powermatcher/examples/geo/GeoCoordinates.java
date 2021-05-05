@@ -34,6 +34,7 @@ public class GeoCoordinates {
                 latitude = Double.parseDouble(st.getObject().stringValue());
             }
         }
+
         public GeoCoordinates build() {
             return new GeoCoordinates(longitude, latitude);
         }

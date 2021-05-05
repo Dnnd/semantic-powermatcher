@@ -1,7 +1,6 @@
 package ru.agentlab.semantic.powermatcher.examples.configurators;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.osgi.service.component.annotations.Activate;
@@ -61,7 +60,10 @@ public class FlexiblepowerConnectionPageConfigurator implements ThingServiceConf
                 String property = bindings.getValue("propName").stringValue();
                 var value = bindings.getValue("propValue");
                 switch (property) {
-                    case "felixPluginActive", "dashboardWidgetActive" -> serviceConfiguration.put(property, value.stringValue());
+                    case "felixPluginActive", "dashboardWidgetActive" -> serviceConfiguration.put(
+                            property,
+                            value.stringValue()
+                    );
                 }
             }
 

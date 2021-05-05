@@ -86,19 +86,23 @@ public class SemanticUncontrolledResourceSimulation {
         var obsCtx = iri(config.stateContext());
 
         subscription = Utils.supplyAsyncWithCancel(() -> populateThingModel(ctx, thingCtx, obsCtx), ctx.getExecutor())
-                .then(thingRepository.getThing(iri(config.thingIRI())))
-                .flatMapMany(thing -> propertyAffordanceRepository.getPropertyAffordancesWithType(thing, POWER))
-                .flatMap(affordance -> Flux.interval(Duration.ofMillis(config.intervalMsec()), scheduler)
-                        .map(sec -> affordance))
-                .doFinally(ev -> {
-                    sailConn.close();
-                    connection.close();
-                })
-                .subscribe(powerAffordance -> publishNewState(random.sample(),
-                                                              powerAffordance,
-                                                              connection,
-                                                              obsCtx
-                ));
+                            .then(thingRepository.getThing(iri(config.thingIRI())))
+                            .flatMapMany(thing -> propertyAffordanceRepository.getPropertyAffordancesWithType(
+                                    thing,
+                                    POWER
+                            ))
+                            .flatMap(affordance -> Flux.interval(Duration.ofMillis(config.intervalMsec()), scheduler)
+                                                       .map(sec -> affordance))
+                            .doFinally(ev -> {
+                                sailConn.close();
+                                connection.close();
+                            })
+                            .subscribe(powerAffordance -> publishNewState(
+                                    random.sample(),
+                                    powerAffordance,
+                                    connection,
+                                    obsCtx
+                            ));
         logger.info("Starting semantic uncontrolled resource simulation...Done");
     }
 

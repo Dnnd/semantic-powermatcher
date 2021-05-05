@@ -4,6 +4,7 @@ import ru.agentlab.semantic.wot.thing.Thing;
 
 public class ThingProvider {
     private Thing thing;
+
     public void ThingProvider(Thing thing) {
         this.thing = thing;
     }

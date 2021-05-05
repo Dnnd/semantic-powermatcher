@@ -40,7 +40,7 @@ import java.util.concurrent.Executors;
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.*;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
+import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.ACTION_INVOCATION;
 
 @Component(
         immediate = true,
@@ -106,7 +106,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
         })).subscribe();
 
         onStateUpdateSubscription = thingMono.flatMapMany(this::subscribeOnHeaterStateUpdates)
-                .subscribe(this::publishState);
+                                             .subscribe(this::publishState);
     }
 
     @Deactivate
@@ -135,23 +135,24 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     private Flux<HeaterResourceState> subscribeOnHeaterStateUpdates(Thing heater) {
 
         return propertyAffordances.getPropertyAffordancesWithType(heater, TEMPERATURE, POWER)
-                .filter(affordance -> affordance.getProperty(LOCATION_TYPE)
-                        .map(locationType -> locationType.equals(INSIDE))
-                        .orElse(true))
-                .collectList()
-                .flatMapMany(affordances -> {
-                    var heatingPower = affordances.stream()
-                            .filter(affordance -> affordance.hasType(POWER))
-                            .findFirst()
-                            .orElseThrow();
+                                  .filter(affordance -> affordance.getProperty(LOCATION_TYPE)
+                                                                  .map(locationType -> locationType.equals(INSIDE))
+                                                                  .orElse(true))
+                                  .collectList()
+                                  .flatMapMany(affordances -> {
+                                      var heatingPower = affordances.stream()
+                                                                    .filter(affordance -> affordance.hasType(POWER))
+                                                                    .findFirst()
+                                                                    .orElseThrow();
 
-                    var indoorTemperature = affordances.stream()
-                            .filter(affordance -> affordance.hasType(TEMPERATURE))
-                            .findFirst()
-                            .orElseThrow();
+                                      var indoorTemperature = affordances.stream()
+                                                                         .filter(affordance -> affordance.hasType(
+                                                                                 TEMPERATURE))
+                                                                         .findFirst()
+                                                                         .orElseThrow();
 
-                    return subscribeOnHeaterStateUpdates(indoorTemperature, heatingPower);
-                });
+                                      return subscribeOnHeaterStateUpdates(indoorTemperature, heatingPower);
+                                  });
     }
 
     private Flux<HeaterResourceState> subscribeOnHeaterStateUpdates(ThingPropertyAffordance indoorTemperature,
@@ -174,11 +175,12 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
                 HAS_SIMPLE_RESULT,
                 floatObservationsFactory,
                 lastModifiedComparator
-        ).withLatestFrom(heatingPowerUpdates,
-                         (temperatureObservation, heatingPowerObservation) -> new HeaterResourceState(
-                                 temperatureObservation.getValue(),
-                                 heatingPowerObservation.getValue()
-                         )
+        ).withLatestFrom(
+                heatingPowerUpdates,
+                (temperatureObservation, heatingPowerObservation) -> new HeaterResourceState(
+                        temperatureObservation.getValue(),
+                        heatingPowerObservation.getValue()
+                )
         );
     }
 

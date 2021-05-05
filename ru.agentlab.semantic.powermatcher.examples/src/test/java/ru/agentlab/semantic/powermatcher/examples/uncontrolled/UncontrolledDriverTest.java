@@ -19,7 +19,8 @@ public class UncontrolledDriverTest {
     public void test() throws IOException, InterruptedException {
         SailRegistry.getInstance().add(new ChangeTrackingFactory());
         IRI thingIRI = iri("https://example.agentlab.ru/#WindGeneratorModel_1");
-        try (EmbeddedChangetrackingRepo repo = EmbeddedChangetrackingRepo.makeTempRepository("test"); var conn = repo.getConnection()) {
+        try (EmbeddedChangetrackingRepo repo = EmbeddedChangetrackingRepo.makeTempRepository("test");
+             var conn = repo.getConnection()) {
             SemanticUncontrolledResourceSimulation simulation = new SemanticUncontrolledResourceSimulation();
             UncontrolledSemanticResourceDriver driver = new UncontrolledSemanticResourceDriver();
             SailRepository repository = (SailRepository) conn.getRepository();

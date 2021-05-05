@@ -39,8 +39,9 @@ public class Building {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Building building = (Building) o;
-        return Double.compare(building.length, length) == 0 && Double.compare(building.width,
-                                                                              width
+        return Double.compare(building.length, length) == 0 && Double.compare(
+                building.width,
+                width
         ) == 0 && Double.compare(building.height, height) == 0;
     }
 
