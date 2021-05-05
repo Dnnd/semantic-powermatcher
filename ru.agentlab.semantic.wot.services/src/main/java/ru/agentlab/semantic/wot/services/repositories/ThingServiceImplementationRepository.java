@@ -7,13 +7,12 @@ import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.agentlab.changetracking.filter.ChangetrackingFilter;
+import ru.agentlab.changetracking.filter.Match;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
-import ru.agentlab.semantic.wot.services.api.ThingServiceImplementation;
+import ru.agentlab.semantic.wot.services.api.ThingServiceConfiguratorConfig;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.utils.Utils;
 
@@ -21,11 +20,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static org.eclipse.rdf4j.model.util.Values.iri;
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.tp;
 import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.ADDED;
-import static ru.agentlab.semantic.wot.services.repositories.WotServicesVocabulary.*;
+import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.REMOVED;
+import static ru.agentlab.semantic.wot.services.api.WotServicesVocabulary.*;
 
 public class ThingServiceImplementationRepository {
     private final ConnectionContext context;
@@ -34,47 +33,61 @@ public class ThingServiceImplementationRepository {
         this.context = context;
     }
 
-    public Flux<ThingServiceImplementation> discoverThingServiceImplementations() {
+    public Flux<Match<ThingServiceConfiguratorConfig>> discoverThingServiceImplementations() {
         return Utils.supplyAsyncWithCancel(this::fetchThingServiceImplementationsSync, context.getExecutor())
+                    .map(implementations -> implementations.map(implementation -> new Match<>(ADDED, implementation)))
                     .flatMapMany(Flux::fromStream)
                     .concatWith(subscribeOnNewThingServices());
     }
 
-    public Flux<ThingServiceImplementation> subscribeOnNewThingServices() {
+    public Flux<Match<ThingServiceConfiguratorConfig>> subscribeOnNewThingServices() {
         var conn = (ChangeTrackerConnection) context.getSailConnection();
         var filter = ChangetrackingFilter.builder()
-                                         .addPattern(null, RDF.TYPE, THING_SERVICE_IMPLEMENTATION, ADDED)
+                                         .addPattern(
+                                                 null,
+                                                 RDF.TYPE,
+                                                 THING_SERVICE_CONFIGURATOR,
+                                                 ChangetrackingFilter.Filtering.ALL
+                                         )
                                          .build();
         return conn.events(context.getScheduler())
-                   .flatMap(changes -> Mono.justOrEmpty(
-                           filter.matchModel(changes.getAddedStatements())
-                                 .map(implModel -> new ThingServiceImplementation.Builder()
-                                         .setModel(implModel)
-                                         .build()
-                                 )
-                   ));
+                   .flatMap(changes -> {
+                       var added = Mono.justOrEmpty(
+                               filter.matchModel(changes.getAddedStatements())
+                                     .map(implModel -> new ThingServiceConfiguratorConfig.Builder()
+                                             .setModel(implModel)
+                                             .build()
+                                     ).map(implementation -> new Match<>(REMOVED, implementation))
+                       );
+                       var removed = Mono.justOrEmpty(
+                               filter.matchModel(changes.getRemovedStatements())
+                                     .map(implModel -> new ThingServiceConfiguratorConfig.Builder()
+                                             .setModel(implModel)
+                                             .build()
+                                     ).map(implementation -> new Match<>(ADDED, implementation))
+                       );
+                       return added.concatWith(removed);
+                   });
     }
 
-    public Stream<ThingServiceImplementation> fetchThingServiceImplementationsSync() {
+    public Stream<ThingServiceConfiguratorConfig> fetchThingServiceImplementationsSync() {
         SailRepositoryConnection connection = context.getConnection();
         Variable implIRI = var("implIRI");
-        Variable confID = var("confID");
-        Variable bundleID = var("bundleID");
-        Variable modelIRI = var("modelIRI");
+        Variable pred = var("pred");
+        Variable obj = var("obj");
 
         ConstructQuery query = Queries.CONSTRUCT()
                                       .where(
-                                              tp(implIRI, RDF.TYPE, iri("ThingServiceImplementation")),
-                                              tp(implIRI, CONFIGURATION_ID, confID),
-                                              tp(implIRI, BUNDLE_ID, bundleID),
-                                              tp(implIRI, MODEL_IRI, modelIRI)
+                                              tp(implIRI, RDF.TYPE, THING_SERVICE_CONFIGURATOR),
+                                              tp(implIRI, pred, obj)
                                       );
-        Map<IRI, ThingServiceImplementation.Builder> implementations = new HashMap<>();
+
+        Map<IRI, ThingServiceConfiguratorConfig.Builder> implementations = new HashMap<>();
         try (var result = connection.prepareGraphQuery(query.getQueryString()).evaluate()) {
             for (Statement statement : result) {
-                implementations.compute((IRI) statement.getObject(), (implementationIRI, impl) -> {
+                implementations.compute((IRI) statement.getSubject(), (implementationIRI, impl) -> {
                     if (impl == null) {
-                        impl = new ThingServiceImplementation.Builder();
+                        impl = new ThingServiceConfiguratorConfig.Builder();
                     }
                     return impl.processStatement(statement);
                 });
@@ -83,7 +96,7 @@ public class ThingServiceImplementationRepository {
         }
         return implementations.values()
                               .stream()
-                              .map(ThingServiceImplementation.Builder::build);
+                              .map(ThingServiceConfiguratorConfig.Builder::build);
 
     }
 }

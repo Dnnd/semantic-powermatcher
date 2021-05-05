@@ -1,9 +1,13 @@
 package ru.agentlab.semantic.wot.services.providers;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import org.eclipse.rdf4j.model.IRI;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.*;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
@@ -17,19 +21,25 @@ import ru.agentlab.semantic.wot.utils.Utils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 
 @Component(scope = ServiceScope.SINGLETON, immediate = true)
+@Designate(ocd = ThingServiceFactory.Config.class)
 public class ThingServiceFactory {
     private final List<ThingServiceConfigurator> preActivated = new CopyOnWriteArrayList<>();
     private final Map<IRI, Disposable> subscriptions = new ConcurrentHashMap<>();
-    private final Map<String, Configuration> configurations = new ConcurrentHashMap<>();
+    private final Multimap<String, Configuration> configurations = ArrayListMultimap.create();
     private final Logger logger = LoggerFactory.getLogger(ThingServiceFactory.class);
     private volatile ConnectionContext context;
     private volatile ConfigurationAdmin configurationAdmin;
+
+    @ObjectClassDefinition
+    public @interface Config {
+        // TODO: actually use this property
+        boolean shutdownServicesOnDeactivate() default true;
+    }
 
     @Reference
     public void bindSailRepositoryProvider(SailRepositoryProvider repositoryProvider) {
@@ -59,12 +69,19 @@ public class ThingServiceFactory {
 
     public void removeConfigurator(ThingServiceConfigurator configurator) {
         logger.info("Removing ThingServiceConfigurator for {} ...", configurator.getModelIRI());
+        for (Configuration configuration : configurations.get(configurator.getConfigurationPID())) {
+            try {
+                configuration.delete();
+            } catch (IOException e) {
+                logger.error("unable to delete configuration {}", configuration.getPid(), e);
+            }
+        }
         subscriptions.remove(configurator.getModelIRI()).dispose();
         logger.info("Removing ThingServiceConfigurator for {} ... Done", configurator.getModelIRI());
     }
 
     @Activate
-    public void activate() {
+    public void activate(Config ignore) {
         logger.info("Activating ThingService Factory...");
         preActivated.forEach(this::enableServiceDiscovery);
         logger.info("Activating ThingService Factory...Done");
@@ -98,13 +115,12 @@ public class ThingServiceFactory {
     private void registerThingServiceConfiguration(ThingServiceConfigurator configurator, Thing thing) {
         try {
             var config = switch (configurator.getServiceType()) {
-                case FACTORY -> configurationAdmin.getConfiguration(
+                case SINGLETON -> configurationAdmin.getConfiguration(
                         configurator.getConfigurationPID(),
                         configurator.getBundleID()
                 );
-                case SINGLETON -> configurationAdmin.getFactoryConfiguration(
+                case FACTORY -> configurationAdmin.createFactoryConfiguration(
                         configurator.getConfigurationPID(),
-                        configurator.getConfigurationPID() + "." + UUID.randomUUID(),
                         configurator.getBundleID()
                 );
             };
