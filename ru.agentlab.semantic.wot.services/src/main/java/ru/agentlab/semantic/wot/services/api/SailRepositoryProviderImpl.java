@@ -40,8 +40,9 @@ public class SailRepositoryProviderImpl implements SailRepositoryProvider {
 
         ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new NativeStoreConfig());
         trackerConfig.setInteractiveNotifications(true);
-        repositoryManager.addRepositoryConfig(new RepositoryConfig(config.repoID(),
-                                                                   new SailRepositoryConfig(trackerConfig)
+        repositoryManager.addRepositoryConfig(new RepositoryConfig(
+                config.repoID(),
+                new SailRepositoryConfig(trackerConfig)
         ));
         repo = (SailRepository) repositoryManager.getRepository(config.repoID());
     }

@@ -24,7 +24,7 @@ import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.tp;
 import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.ADDED;
 import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.REMOVED;
-import static ru.agentlab.semantic.wot.services.api.WotServicesVocabulary.*;
+import static ru.agentlab.semantic.wot.services.api.WotServicesVocabulary.THING_SERVICE_CONFIGURATOR;
 
 public class ThingServiceImplementationRepository {
     private final ConnectionContext context;
