@@ -16,8 +16,8 @@ import ru.agentlab.changetracking.filter.ChangetrackingFilter;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.semantic.wot.api.Metadata;
 import ru.agentlab.semantic.wot.api.Observation;
-import ru.agentlab.semantic.wot.api.ObservationParser;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
+import ru.agentlab.semantic.wot.api.ObservationParser;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
@@ -31,7 +31,8 @@ import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.select;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.tp;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.*;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
+import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.DESCRIBED_BY_AFFORDANCE;
+import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_PROPERTY_AFFORDANCE;
 
 public class ThingPropertyAffordanceRepository implements WotRepository {
     private final ConnectionContext context;
@@ -104,8 +105,9 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
     }
 
     public Mono<ThingPropertyAffordance> getThingPropertyAffordance(Thing thing, IRI affordanceIRI) {
-        return Utils.supplyAsyncWithCancel(() -> getThingPropertyAffordanceSync(thing, affordanceIRI),
-                                           getConnectionContext().getExecutor()
+        return Utils.supplyAsyncWithCancel(
+                () -> getThingPropertyAffordanceSync(thing, affordanceIRI),
+                getConnectionContext().getExecutor()
         );
     }
 
@@ -147,9 +149,11 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
                 tp(obs, RESULT_TIME, mostRecent),
                 tp(obs, resultType, value),
                 tp(obs, pred, subj)
-        ).where(select(obs, Expressions.max(lastModified).as(mostRecent))
-                        .where(tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
-                               tp(obs, RESULT_TIME, lastModified)
+        ).where(
+                select(obs, Expressions.max(lastModified).as(mostRecent))
+                        .where(
+                                tp(obs, DESCRIBED_BY_AFFORDANCE, propertyAffordanceIRI),
+                                tp(obs, RESULT_TIME, lastModified)
                         )
                         .groupBy(obs),
                 tp(obs, resultType, value)
@@ -177,12 +181,12 @@ public class ThingPropertyAffordanceRepository implements WotRepository {
         var sailConn = (ChangeTrackerConnection) context.getSailConnection();
 
         return sailConn.events(context.getScheduler())
-                .flatMap(changes -> Utils.extractLatestObservation(
-                        changes,
-                        observationFactory,
-                        filter,
-                        comparator
-                ));
+                       .flatMap(changes -> Utils.extractLatestObservation(
+                               changes,
+                               observationFactory,
+                               filter,
+                               comparator
+                       ));
     }
 
     @Override

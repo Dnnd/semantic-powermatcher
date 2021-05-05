@@ -3,10 +3,10 @@ package ru.agentlab.semantic.wot.api;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.Values;
 
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
+import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_INPUT;
+import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.HAS_OUTPUT;
 
 public interface Action<I, O, M extends Metadata<M>> {
     void setMetadata(M metadata);
@@ -22,18 +22,20 @@ public interface Action<I, O, M extends Metadata<M>> {
         IRI invocationIRI = getMetadata().getIRI();
         var input = getInput();
         if (input != null) {
-            model.add(invocationIRI,
-                      HAS_INPUT,
-                      Values.literal(input),
-                      context
+            model.add(
+                    invocationIRI,
+                    HAS_INPUT,
+                    Values.literal(input),
+                    context
             );
         }
         var output = getOutput();
         if (output != null) {
-            model.add(invocationIRI,
-                      HAS_OUTPUT,
-                      Values.literal(output),
-                      context
+            model.add(
+                    invocationIRI,
+                    HAS_OUTPUT,
+                    Values.literal(output),
+                    context
             );
         }
         return model;

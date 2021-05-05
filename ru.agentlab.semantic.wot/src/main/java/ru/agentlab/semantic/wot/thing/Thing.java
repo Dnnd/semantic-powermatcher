@@ -28,13 +28,13 @@ public class Thing {
         this.thingIRI = thingIRI;
         this.model = model;
         this.types = model.filter(thingIRI, RDF.TYPE, null)
-                .stream()
-                .map(st -> (IRI) st.getSubject())
-                .collect(Collectors.toList());
+                          .stream()
+                          .map(st -> (IRI) st.getSubject())
+                          .collect(Collectors.toList());
         this.thingModelIRI = model.filter(thingIRI, HAS_THING_MODEL, null)
-                .stream()
-                .findFirst()
-                .map(st -> (IRI) st.getObject()).orElseThrow();
+                                  .stream()
+                                  .findFirst()
+                                  .map(st -> (IRI) st.getObject()).orElseThrow();
     }
 
     public Optional<Value> getProperty(IRI predicate) {

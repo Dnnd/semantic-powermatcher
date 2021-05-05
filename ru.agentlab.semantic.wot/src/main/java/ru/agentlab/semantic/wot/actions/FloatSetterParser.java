@@ -27,7 +27,7 @@ public class FloatSetterParser<M extends Metadata<M>> implements ActionParser<Fl
     }
 
     @Override
-    public Action<Float, Void, M>  build() {
+    public Action<Float, Void, M> build() {
         Action<Float, Void, M> action = new FloatSetter<>(value);
         action.setMetadata(metadataParser.build());
         return action;

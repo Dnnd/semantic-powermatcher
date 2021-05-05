@@ -2,9 +2,9 @@ package ru.agentlab.semantic.wot.observations;
 
 import org.eclipse.rdf4j.model.Statement;
 import ru.agentlab.semantic.wot.api.Metadata;
+import ru.agentlab.semantic.wot.api.MetadataParser;
 import ru.agentlab.semantic.wot.api.Observation;
 import ru.agentlab.semantic.wot.api.ObservationParser;
-import ru.agentlab.semantic.wot.api.MetadataParser;
 
 import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
 

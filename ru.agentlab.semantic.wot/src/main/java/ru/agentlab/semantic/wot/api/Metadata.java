@@ -11,9 +11,8 @@ import org.eclipse.rdf4j.model.vocabulary.XSD;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-import static ru.agentlab.semantic.wot.vocabularies.SSN.OBSERVED_PROPERTY;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.RESULT_TIME;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
+import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.DESCRIBED_BY_AFFORDANCE;
 
 public interface Metadata<M> {
     default Model toModel(Resource... context) {

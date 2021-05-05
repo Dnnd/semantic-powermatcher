@@ -3,8 +3,6 @@ package ru.agentlab.semantic.wot.utils;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import ru.agentlab.changetracking.filter.ChangetrackingFilter;
@@ -15,14 +13,13 @@ import ru.agentlab.semantic.wot.api.Observation;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
-import static ru.agentlab.semantic.wot.vocabularies.SSN.*;
-import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.*;
+import static ru.agentlab.semantic.wot.vocabularies.SSN.RESULT_TIME;
+import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.DESCRIBED_BY_AFFORDANCE;
 
 public class Utils {
     public static <T, M extends Metadata<M>> Mono<Observation<T, M>> extractLatestObservation(TransactionChanges changes,
@@ -31,29 +28,33 @@ public class Utils {
                                                                                               Comparator<Observation<T, M>> comparator) {
         Map<IRI, Model> modelsBySubject = Transformations.groupBySubject(changes.getAddedStatements());
         return modelsBySubject.entrySet()
-                .stream()
-                .flatMap(entity -> {
-                    IRI observationIRI = entity.getKey();
-                    Model observationModel = entity.getValue();
-                    return changesFilter.matchModel(observationModel)
-                            .map(model -> obsFactory.createObservation(observationIRI, observationModel))
-                            .stream();
-                })
-                .max(comparator)
-                .map(Mono::just)
-                .orElseGet(Mono::empty);
+                              .stream()
+                              .flatMap(entity -> {
+                                  IRI observationIRI = entity.getKey();
+                                  Model observationModel = entity.getValue();
+                                  return changesFilter.matchModel(observationModel)
+                                                      .map(model -> obsFactory.createObservation(
+                                                              observationIRI,
+                                                              observationModel
+                                                      ))
+                                                      .stream();
+                              })
+                              .max(comparator)
+                              .map(Mono::just)
+                              .orElseGet(Mono::empty);
     }
 
     public static ChangetrackingFilter makeObservationsFilter(IRI affordanceIRI, IRI resultType) {
         return ChangetrackingFilter.builder()
-                .addPattern(null,
-                            DESCRIBED_BY_AFFORDANCE,
-                            affordanceIRI,
-                            ChangetrackingFilter.Filtering.ADDED
-                )
-                .addPattern(null, resultType, null, ChangetrackingFilter.Filtering.ADDED)
-                .addPattern(null, RESULT_TIME, null, ChangetrackingFilter.Filtering.ADDED)
-                .build();
+                                   .addPattern(
+                                           null,
+                                           DESCRIBED_BY_AFFORDANCE,
+                                           affordanceIRI,
+                                           ChangetrackingFilter.Filtering.ADDED
+                                   )
+                                   .addPattern(null, resultType, null, ChangetrackingFilter.Filtering.ADDED)
+                                   .addPattern(null, RESULT_TIME, null, ChangetrackingFilter.Filtering.ADDED)
+                                   .build();
     }
 
     public static <T> Mono<T> withCancel(CompletableFuture<T> future) {
@@ -72,17 +73,19 @@ public class Utils {
         return withCancel(CompletableFuture.runAsync(runnable, executor));
     }
 
-    public static <T> Mono<T> supplyAsyncWithCancel(Supplier<T> supplier, ExecutorService executor, boolean mayInterruptIfRunning) {
+    public static <T> Mono<T> supplyAsyncWithCancel(Supplier<T> supplier,
+                                                    ExecutorService executor,
+                                                    boolean mayInterruptIfRunning) {
         return withCancel(CompletableFuture.supplyAsync(supplier, executor), mayInterruptIfRunning);
     }
 
     public static <T> Mono<T> withCancel(CompletableFuture<T> future, boolean mayInterruptOnCancel) {
         return Mono.fromFuture(future)
-                .doFinally(signalType -> {
-                    if (signalType.equals(SignalType.CANCEL)) {
-                        future.cancel(mayInterruptOnCancel);
-                    }
-                });
+                   .doFinally(signalType -> {
+                       if (signalType.equals(SignalType.CANCEL)) {
+                           future.cancel(mayInterruptOnCancel);
+                       }
+                   });
     }
 
 }

@@ -14,7 +14,12 @@ public class ThingActionAffordance {
     private final IRI thingIRI;
 
 
-    public ThingActionAffordance(IRI thingIRI, IRI propertyAffordance, List<IRI> types, IRI inputSchema, IRI outputSchema, Model model) {
+    public ThingActionAffordance(IRI thingIRI,
+                                 IRI propertyAffordance,
+                                 List<IRI> types,
+                                 IRI inputSchema,
+                                 IRI outputSchema,
+                                 Model model) {
         this.actionAffordanceIRI = propertyAffordance;
         this.types = types;
         this.model = model;
@@ -22,7 +27,6 @@ public class ThingActionAffordance {
         this.outputSchema = outputSchema;
         this.thingIRI = thingIRI;
     }
-
 
 
     public IRI getInputSchema() {

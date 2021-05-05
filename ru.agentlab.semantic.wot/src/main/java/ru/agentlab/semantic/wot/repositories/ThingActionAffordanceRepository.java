@@ -104,12 +104,13 @@ public class ThingActionAffordanceRepository implements WotRepository {
                     affordanceIRI = (IRI) st.getSubject();
                 }
             }
-            return new ThingActionAffordance(thing.getIRI(),
-                                             affordanceIRI,
-                                             types,
-                                             inputSchemaIRI,
-                                             outputSchemaIRI,
-                                             model
+            return new ThingActionAffordance(
+                    thing.getIRI(),
+                    affordanceIRI,
+                    types,
+                    inputSchemaIRI,
+                    outputSchemaIRI,
+                    model
             );
         }
     }
