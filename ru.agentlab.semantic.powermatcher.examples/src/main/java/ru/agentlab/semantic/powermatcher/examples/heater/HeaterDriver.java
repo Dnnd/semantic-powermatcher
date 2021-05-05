@@ -14,7 +14,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
-import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.actions.FloatSetter;
 import ru.agentlab.semantic.wot.api.Action;
 import ru.agentlab.semantic.wot.api.Observation;
@@ -25,6 +24,7 @@ import ru.agentlab.semantic.wot.observations.FloatObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
+import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.thing.ThingActionAffordance;
@@ -73,7 +73,6 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
 
     @ObjectClassDefinition(name = "Heater Semantic Driver")
     public @interface Config {
-
         String thingIRI();
 
         String stateContext();

@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
-import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
+import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
 
 import java.io.File;
 import java.time.Duration;
@@ -77,11 +77,11 @@ public class RepoExporter {
             case FILE -> new FileExportBackend(new File(config.export_targetUri()));
             case REPOSITORY -> new RepositoryExportBackend(
                     RemoteRepositoryManager.getInstance(config.export_targetUri())
-                            .getRepository(config.export_repository())
+                                           .getRepository(config.export_repository())
             );
         };
         subscription = Flux.interval(interval, scheduler)
-                .subscribe(tick -> exportObservations(backend, config.contextToExport()));
+                           .subscribe(tick -> exportObservations(backend, config.contextToExport()));
     }
 
 

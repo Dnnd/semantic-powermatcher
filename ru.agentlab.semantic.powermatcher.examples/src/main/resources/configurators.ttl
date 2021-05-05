@@ -1,0 +1,20 @@
+@prefix wots:       <https://wot.services.agentlab.ru/#>.
+@prefix ex:         <https://example.agentlab.ru/#> .
+
+ex:UncontrolledSemanticResourceDriverConfigurator_1
+  a wots:ThingServiceConfigurator ;
+  wots:configuratorPid "ru.agentlab.semantic.powermatcher.UncontrolledSemanticResourceDriver" ;
+  wots:configuratorBundleID "ru.agentlab.semantic.powermatcher.examples" ;
+  wots:configuratorServiceType wots:Factory ;
+  wots:modelIri ex:HeaterModel ;
+  wots:hasConfigurationProperty _:stateContext, _:resourceId.
+
+_:stateContext
+  a wots:ConfigurationProperty ;
+  wots:propertyName "stateContext" ;
+  wots:propertyValue "https://observations.agentlab.ru".
+
+_:resourceId
+  a wots:ConfigurationProperty ;
+  wots:propertyName "resourceId" ;
+  wots:propertyValue "wind".

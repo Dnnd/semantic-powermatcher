@@ -8,11 +8,10 @@ import org.flexiblepower.ral.drivers.uncontrolled.PowerState;
 import org.flexiblepower.ral.drivers.uncontrolled.UncontrollableDriver;
 import org.flexiblepower.ral.ext.AbstractResourceDriver;
 import org.osgi.service.component.annotations.*;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import reactor.core.Disposable;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.FloatObservationParser;
@@ -34,7 +33,7 @@ import static ru.agentlab.semantic.powermatcher.vocabularies.Example.POWER;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
 
 @Component(
-        name = "ru.agentlab.semantic.powermatcher.UncontrolledSemanticResourceDriver",
+        name = UncontrolledSemanticResourceDriverConfigurator.DRIVER_CONFIG_NAME,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         service = {Endpoint.class})
@@ -47,10 +46,11 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
     private Disposable subscription;
 
     @ObjectClassDefinition(
-            id = "ru.agentlab.semantic.powermatcher.UncontrolledSemanticResourceDriver",
+            id = UncontrolledSemanticResourceDriverConfigurator.DRIVER_CONFIG_NAME,
             name = "Semantic Resource Driver Config"
     )
     @interface Config {
+        @AttributeDefinition(name = UncontrolledSemanticResourceDriverConfigurator.THING_IRI_PROPERTY)
         String thingIRI();
     }
 
@@ -96,23 +96,28 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
         var propertyAffordanceRepository = new ThingPropertyAffordanceRepository(ctx);
 
         this.subscription = thingRepository.getThing(iri(config.thingIRI()))
-                .flatMapMany(thing -> propertyAffordanceRepository.getPropertyAffordancesWithType(thing, POWER))
-                .flatMap(powerProp -> propertyAffordanceRepository.subscribeOnLatestObservations(
-                        powerProp,
-                        HAS_SIMPLE_RESULT,
-                        (obsIRI) -> new FloatObservationParser<>(new DefaultMetadataParser(obsIRI)),
-                        Comparator.comparing(observation -> observation.getMetadata().getLastModified())
-                ))
-                .doFinally(signal -> {
-                    thingRepository.cancel();
-                    propertyAffordanceRepository.cancel();
-                    sailConn.close();
-                    conn.close();
-                })
-                .subscribe(powerOutputObservation -> {
-                    logger.info(powerOutputObservation.toString());
-                    publishState(new State(powerOutputObservation.getValue()));
-                });
+                                           .flatMapMany(thing -> propertyAffordanceRepository.getPropertyAffordancesWithType(
+                                                   thing,
+                                                   POWER
+                                           ))
+                                           .flatMap(powerProp -> propertyAffordanceRepository.subscribeOnLatestObservations(
+                                                   powerProp,
+                                                   HAS_SIMPLE_RESULT,
+                                                   (obsIRI) -> new FloatObservationParser<>(new DefaultMetadataParser(
+                                                           obsIRI)),
+                                                   Comparator.comparing(observation -> observation.getMetadata()
+                                                                                                  .getLastModified())
+                                           ))
+                                           .doFinally(signal -> {
+                                               thingRepository.cancel();
+                                               propertyAffordanceRepository.cancel();
+                                               sailConn.close();
+                                               conn.close();
+                                           })
+                                           .subscribe(powerOutputObservation -> {
+                                               logger.info(powerOutputObservation.toString());
+                                               publishState(new State(powerOutputObservation.getValue()));
+                                           });
         logger.info("Uncontrolled semantic resource driver...Done");
     }
 

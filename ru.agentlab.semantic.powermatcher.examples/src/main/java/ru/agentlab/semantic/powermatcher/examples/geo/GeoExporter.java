@@ -10,13 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import ru.agentlab.semantic.powermatcher.examples.uncontrolled.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.api.Observation;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
 import ru.agentlab.semantic.wot.observations.DefaultMetadata;
 import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.IRIObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
+import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 
 import java.util.Comparator;
@@ -46,10 +46,7 @@ public class GeoExporter {
         var propsRepo = new ThingPropertyAffordanceRepository(ctx);
         var geoRepo = new GeoRepository(ctx);
         subscription = discoverPlaceObservations(propsRepo)
-                .flatMap(obs -> {
-                    var placeMono = geoRepo.get(obs.getValue());
-                    return placeMono;
-                })
+                .flatMap(obs -> geoRepo.get(obs.getValue()))
                 .doFinally(signal -> ctx.close())
                 .subscribe(place -> {
                     logger.info("observed place: {}", place);

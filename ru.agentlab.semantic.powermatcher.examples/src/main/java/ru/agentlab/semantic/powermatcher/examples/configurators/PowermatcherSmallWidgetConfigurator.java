@@ -1,10 +1,9 @@
-package ru.agentlab.semantic.powermatcher.examples.uncontrolled;
+package ru.agentlab.semantic.powermatcher.examples.configurators;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -18,14 +17,9 @@ import java.util.Hashtable;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
 
-@Component(configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
-@Designate(ocd = UncontrolledSemanticResourceDriverConfigurator.Config.class, factory = true)
-public class UncontrolledSemanticResourceDriverConfigurator implements ThingServiceConfigurator {
-    public static final String THING_IRI_PROPERTY = "thingIri";
-    public static final String DRIVER_CONFIG_NAME =
-            "ru.agentlab.semantic.powermatcher.UncontrolledSemanticResourceDriver";
-
-    private volatile Config config;
+@Component(immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Designate(ocd = PowermatcherSmallWidgetConfigurator.Config.class, factory = true)
+public class PowermatcherSmallWidgetConfigurator implements ThingServiceConfigurator {
 
     @ObjectClassDefinition
     public @interface Config {
@@ -33,21 +27,16 @@ public class UncontrolledSemanticResourceDriverConfigurator implements ThingServ
         String modelIRI();
     }
 
+    private Config config;
+
     @Activate
     public void activate(Config config) {
         this.config = config;
     }
 
-    @Deactivate
-    public void deactivate() {
-
-    }
-
     @Override
     public Dictionary<String, ?> getConfiguration(Thing thing, ConnectionContext context) {
-        Dictionary<String, String> props = new Hashtable<>();
-        props.put(THING_IRI_PROPERTY, thing.getIRI().stringValue());
-        return props;
+        return new Hashtable<>();
     }
 
     @Override
@@ -57,16 +46,16 @@ public class UncontrolledSemanticResourceDriverConfigurator implements ThingServ
 
     @Override
     public String getConfigurationPID() {
-        return DRIVER_CONFIG_NAME;
+        return "net.powermatcher.fpai.widget.SmallWidget";
     }
 
     @Override
     public String getBundleID() {
-        return "ru.agentlab.semantic.powermatcher.examples";
+        return "net.powermatcher.fpai.controller";
     }
 
     @Override
     public ServiceType getServiceType() {
-        return ServiceType.FACTORY;
+        return ServiceType.SINGLETON;
     }
 }
