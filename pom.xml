@@ -16,6 +16,8 @@
     <packaging>pom</packaging>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reosources.sourceEncoding>UTF-8</project.reosources.sourceEncoding>
         <reactor.version>3.4.3</reactor.version>
         <maven.compiler.source>15</maven.compiler.source>
         <maven.compiler.target>15</maven.compiler.target>
