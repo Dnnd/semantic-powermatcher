@@ -13,7 +13,7 @@ import ru.agentlab.changetracking.filter.ChangetrackingFilter;
 import ru.agentlab.changetracking.filter.Match;
 import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.services.api.ThingServiceConfiguratorConfig;
-import ru.agentlab.semantic.wot.services.repositories.ThingServiceImplementationRepository;
+import ru.agentlab.semantic.wot.services.repositories.ThingServiceConfiguratorsRepository;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.utils.Utils;
 
@@ -59,8 +59,8 @@ public class ThingServiceConfiguratorFactory {
         var executor = Executors.newSingleThreadExecutor();
         var connCtx = new ConnectionContext(executor, repository.getConnection());
 
-        var thingServicesRepo = new ThingServiceImplementationRepository(connCtx);
-        subscription = thingServicesRepo.discoverThingServiceImplementations()
+        var thingServicesRepo = new ThingServiceConfiguratorsRepository(connCtx);
+        subscription = thingServicesRepo.discoverThingServiceConfigurators()
                                         .flatMap(implementationMatch -> Utils.supplyAsyncWithCancel(
                                                 () -> handleImplementationMatch(implementationMatch),
                                                 connCtx.getExecutor()

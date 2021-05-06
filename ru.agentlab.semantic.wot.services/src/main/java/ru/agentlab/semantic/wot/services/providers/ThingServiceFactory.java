@@ -1,8 +1,5 @@
 package ru.agentlab.semantic.wot.services.providers;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-import org.eclipse.rdf4j.model.IRI;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.*;
@@ -11,14 +8,19 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
+import ru.agentlab.semantic.wot.services.api.DeclarativeServiceLaunchConfiguration;
 import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.services.api.ThingServiceConfigurator;
+import ru.agentlab.semantic.wot.services.api.ThingServiceScopedContext;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.utils.Utils;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,15 +31,15 @@ import java.util.concurrent.Executors;
 @Designate(ocd = ThingServiceFactory.Config.class)
 public class ThingServiceFactory {
     private final List<ThingServiceConfigurator> preActivated = new CopyOnWriteArrayList<>();
-    private final Map<IRI, Disposable> subscriptions = new ConcurrentHashMap<>();
-    private final Multimap<String, Configuration> configurations = ArrayListMultimap.create();
+
+    private final Map<String, Disposable> subscriptions = new ConcurrentHashMap<>();
+
     private final Logger logger = LoggerFactory.getLogger(ThingServiceFactory.class);
     private volatile ConnectionContext context;
     private volatile ConfigurationAdmin configurationAdmin;
 
     @ObjectClassDefinition
     public @interface Config {
-        // TODO: actually use this property
         boolean shutdownServicesOnDeactivate() default true;
     }
 
@@ -69,14 +71,7 @@ public class ThingServiceFactory {
 
     public void removeConfigurator(ThingServiceConfigurator configurator) {
         logger.info("Removing ThingServiceConfigurator for {} ...", configurator.getModelIRI());
-        for (Configuration configuration : configurations.get(configurator.getConfigurationPID())) {
-            try {
-                configuration.delete();
-            } catch (IOException e) {
-                logger.error("unable to delete configuration {}", configuration.getPid(), e);
-            }
-        }
-        subscriptions.remove(configurator.getModelIRI()).dispose();
+        subscriptions.remove(configurator.getConfiguratorPID()).dispose();
         logger.info("Removing ThingServiceConfigurator for {} ... Done", configurator.getModelIRI());
     }
 
@@ -84,14 +79,17 @@ public class ThingServiceFactory {
     public void activate(Config ignore) {
         logger.info("Activating ThingService Factory...");
         preActivated.forEach(this::enableServiceDiscovery);
+        preActivated.clear();
         logger.info("Activating ThingService Factory...Done");
     }
 
     @Deactivate
     public void deactivate() {
         subscriptions.values().forEach(Disposable::dispose);
-        subscriptions.clear();
-        configurations.values().forEach(configuration -> {
+    }
+
+    private void deactivateConfigurations(Collection<Configuration> configurationsToDeactivate) {
+        configurationsToDeactivate.forEach(configuration -> {
             try {
                 configuration.delete();
             } catch (IOException e) {
@@ -102,31 +100,52 @@ public class ThingServiceFactory {
 
     private void enableServiceDiscovery(ThingServiceConfigurator configurator) {
         var repository = new ThingRepository(context);
-        var subscription = repository.discoverDeploymentsOf(configurator.getModelIRI())
-                                     .subscribe(thing -> Utils.supplyAsyncWithCancel(
-                                             () -> registerThingServiceConfiguration(
-                                                     configurator,
-                                                     thing
-                                             ), context.getExecutor())
-                                     );
-        subscriptions.putIfAbsent(configurator.getModelIRI(), subscription);
+        var servicesContextSource = repository.discoverDeploymentsOf(configurator.getModelIRI())
+                                              .map(ThingServiceScopedContext::new);
+        Disposable subscription = Flux.usingWhen(
+                servicesContextSource,
+                singleServiceContext -> registerThingServiceConfiguration(configurator, singleServiceContext.getThing())
+                        .doOnNext(singleServiceContext::setConfiguration),
+                this::deleteServiceContext
+        ).subscribe();
+        subscriptions.putIfAbsent(configurator.getConfiguratorPID(), subscription);
     }
 
-    private void registerThingServiceConfiguration(ThingServiceConfigurator configurator, Thing thing) {
+    private Mono<Configuration> registerThingServiceConfiguration(ThingServiceConfigurator configurator, Thing thing) {
+        return Utils.supplyAsyncWithCancel(
+                () -> registerThingServiceConfigurationSync(configurator, thing),
+                context.getExecutor()
+        );
+    }
+
+    private Mono<Void> deleteServiceContext(ThingServiceScopedContext scopedContext) {
+        return Utils.supplyAsyncWithCancel(() -> {
+            try {
+                scopedContext.close();
+            } catch (IOException e) {
+                logger.error("unable to delete context {}", scopedContext);
+            }
+        }, context.getExecutor());
+    }
+
+    private Configuration registerThingServiceConfigurationSync(ThingServiceConfigurator configurator, Thing thing) {
         try {
-            var config = switch (configurator.getServiceType()) {
+            DeclarativeServiceLaunchConfiguration launchConfiguration =
+                    configurator.getServiceLaunchConfiguration(thing, context);
+
+            var config = switch (launchConfiguration.getServiceType()) {
                 case SINGLETON -> configurationAdmin.getConfiguration(
-                        configurator.getConfigurationPID(),
-                        configurator.getBundleID()
+                        launchConfiguration.getServiceConfigurationPID(),
+                        launchConfiguration.getBundleID()
                 );
                 case FACTORY -> configurationAdmin.createFactoryConfiguration(
-                        configurator.getConfigurationPID(),
-                        configurator.getBundleID()
+                        launchConfiguration.getServiceConfigurationPID(),
+                        launchConfiguration.getBundleID()
                 );
             };
-            var properties = configurator.getConfiguration(thing, context);
-            configurations.put(config.getPid(), config);
+            var properties = launchConfiguration.getProperties();
             config.update(properties);
+            return config;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

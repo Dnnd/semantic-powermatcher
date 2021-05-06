@@ -26,21 +26,21 @@ import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.A
 import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.REMOVED;
 import static ru.agentlab.semantic.wot.services.api.WotServicesVocabulary.THING_SERVICE_CONFIGURATOR;
 
-public class ThingServiceImplementationRepository {
+public class ThingServiceConfiguratorsRepository {
     private final ConnectionContext context;
 
-    public ThingServiceImplementationRepository(ConnectionContext context) {
+    public ThingServiceConfiguratorsRepository(ConnectionContext context) {
         this.context = context;
     }
 
-    public Flux<Match<ThingServiceConfiguratorConfig>> discoverThingServiceImplementations() {
-        return Utils.supplyAsyncWithCancel(this::fetchThingServiceImplementationsSync, context.getExecutor())
+    public Flux<Match<ThingServiceConfiguratorConfig>> discoverThingServiceConfigurators() {
+        return Utils.supplyAsyncWithCancel(this::fetchThingServiceConfiguratorsSync, context.getExecutor())
                     .map(implementations -> implementations.map(implementation -> new Match<>(ADDED, implementation)))
                     .flatMapMany(Flux::fromStream)
-                    .concatWith(subscribeOnNewThingServices());
+                    .concatWith(subscribeOnNewThingConfigurators());
     }
 
-    public Flux<Match<ThingServiceConfiguratorConfig>> subscribeOnNewThingServices() {
+    public Flux<Match<ThingServiceConfiguratorConfig>> subscribeOnNewThingConfigurators() {
         var conn = (ChangeTrackerConnection) context.getSailConnection();
         var filter = ChangetrackingFilter.builder()
                                          .addPattern(
@@ -54,23 +54,23 @@ public class ThingServiceImplementationRepository {
                    .flatMap(changes -> {
                        var added = Mono.justOrEmpty(
                                filter.matchModel(changes.getAddedStatements())
-                                     .map(implModel -> new ThingServiceConfiguratorConfig.Builder()
-                                             .setModel(implModel)
+                                     .map(configuratorModel -> new ThingServiceConfiguratorConfig.Builder()
+                                             .setModel(configuratorModel)
                                              .build()
-                                     ).map(implementation -> new Match<>(REMOVED, implementation))
+                                     ).map(configurator -> new Match<>(REMOVED, configurator))
                        );
                        var removed = Mono.justOrEmpty(
                                filter.matchModel(changes.getRemovedStatements())
-                                     .map(implModel -> new ThingServiceConfiguratorConfig.Builder()
-                                             .setModel(implModel)
+                                     .map(configuratorModel -> new ThingServiceConfiguratorConfig.Builder()
+                                             .setModel(configuratorModel)
                                              .build()
-                                     ).map(implementation -> new Match<>(ADDED, implementation))
+                                     ).map(configurator -> new Match<>(ADDED, configurator))
                        );
                        return added.concatWith(removed);
                    });
     }
 
-    public Stream<ThingServiceConfiguratorConfig> fetchThingServiceImplementationsSync() {
+    public Stream<ThingServiceConfiguratorConfig> fetchThingServiceConfiguratorsSync() {
         SailRepositoryConnection connection = context.getConnection();
         Variable implIRI = var("implIRI");
         Variable pred = var("pred");

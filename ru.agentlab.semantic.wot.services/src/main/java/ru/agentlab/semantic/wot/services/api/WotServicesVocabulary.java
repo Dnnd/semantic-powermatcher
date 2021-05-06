@@ -19,4 +19,7 @@ public interface WotServicesVocabulary {
     IRI MODEL_IRI = iri(WOT_SERVICES_IRI, "modelIri");
     IRI SINGLETON = iri(WOT_SERVICES_IRI, "Singleton");
     IRI FACTORY = iri(WOT_SERVICES_IRI, "Factory");
+
+    IRI CONFIGURES_SERVICE = iri(WOT_SERVICES_IRI, "configuresService");
+    IRI CONFIGURES_SERVICE_IN_BUNDLE = iri(WOT_SERVICES_IRI, "configuresServiceInBundle");
 }
