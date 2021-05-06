@@ -18,6 +18,7 @@ import ru.agentlab.semantic.wot.observations.FloatObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
+import ru.agentlab.semantic.wot.services.api.ThingServiceConfigurator;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 
 import javax.measure.Measurable;
@@ -33,7 +34,6 @@ import static ru.agentlab.semantic.powermatcher.vocabularies.Example.POWER;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
 
 @Component(
-        name = UncontrolledSemanticResourceDriverConfigurator.DRIVER_CONFIG_NAME,
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true,
         service = {Endpoint.class})
@@ -45,12 +45,9 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private Disposable subscription;
 
-    @ObjectClassDefinition(
-            id = UncontrolledSemanticResourceDriverConfigurator.DRIVER_CONFIG_NAME,
-            name = "Semantic Resource Driver Config"
-    )
+    @ObjectClassDefinition(name = "Semantic Resource Driver Config")
     @interface Config {
-        @AttributeDefinition(name = UncontrolledSemanticResourceDriverConfigurator.THING_IRI_PROPERTY)
+        @AttributeDefinition(name = ThingServiceConfigurator.THING_IRI_PROPERTY)
         String thingIRI();
     }
 
