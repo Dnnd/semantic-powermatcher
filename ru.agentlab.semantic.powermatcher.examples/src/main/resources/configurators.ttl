@@ -3,18 +3,38 @@
 
 ex:UncontrolledSemanticResourceDriverConfigurator_1
   a wots:ThingServiceConfigurator ;
-  wots:configuratorPid "ru.agentlab.semantic.powermatcher.UncontrolledSemanticResourceDriver" ;
-  wots:configuratorBundleID "ru.agentlab.semantic.powermatcher.examples" ;
+  wots:configuratorPid "ru.agentlab.semantic.wot.services.configurators.StaticPropertiesConfigurator" ;
+  wots:configuratorBundleID "ru.agentlab.semantic.wot.services" ;
+  wots:configuratorServiceType wots:Factory ;
+  wots:modelIri ex:WindGeneratorModel ;
+  wots:configuresService "ru.agentlab.semantic.powermatcher.examples.uncontrolled.UncontrolledSemanticResourceDriver" ;
+  wots:configuresServiceInBundle "ru.agentlab.semantic.powermatcher.examples" ;
+  wots:hasConfigurationProperty [
+    a wots:ConfigurationProperty ;
+    wots:configurationPropertyName "stateContext" ;
+    wots:configurationPropertyValue "https://observations.agentlab.ru"
+  ] ;
+  wots:hasConfigurationProperty [
+    a wots:ConfigurationProperty ;
+    wots:configurationPropertyName "stateContext" ;
+    wots:configurationPropertyValue "https://observations.agentlab.ru"
+  ].
+
+ex:HeaterDriverConfigurator_1
+  a wots:ThingServiceConfigurator ;
+  wots:configuratorPid "ru.agentlab.semantic.wot.services.configurators.StaticPropertiesConfigurator" ;
+  wots:configuratorBundleID "ru.agentlab.semantic.wot.services" ;
   wots:configuratorServiceType wots:Factory ;
   wots:modelIri ex:HeaterModel ;
-  wots:hasConfigurationProperty _:stateContext, _:resourceId.
-
-_:stateContext
-  a wots:ConfigurationProperty ;
-  wots:propertyName "stateContext" ;
-  wots:propertyValue "https://observations.agentlab.ru".
-
-_:resourceId
-  a wots:ConfigurationProperty ;
-  wots:propertyName "resourceId" ;
-  wots:propertyValue "wind".
+  wots:configuresService "ru.agentlab.semantic.powermatcher.examples.heater.HeaterDriver" ;
+  wots:configuresServiceInBundle "ru.agentlab.semantic.powermatcher.examples" ;
+  wots:hasConfigurationProperty [
+    a wots:ConfigurationProperty ;
+    wots:configurationPropertyName "stateContext" ;
+    wots:configurationPropertyValue "https://observations.agentlab.ru"
+  ] ;
+  wots:hasConfigurationProperty [
+    a wots:ConfigurationProperty ;
+    wots:configurationPropertyName "resourceId" ;
+    wots:configurationPropertyValue "heater"
+  ].

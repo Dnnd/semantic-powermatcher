@@ -1,0 +1,54 @@
+@prefix td:         <https://www.w3.org/2019/wot/td#> .
+@prefix schema:     <http://schema.org/> .
+@prefix hctl:       <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix dct:        <http://purl.org/dc/terms/> .
+@prefix wotsec:     <https://www.w3.org/2019/wot/security#> .
+@prefix xsd:        <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:       <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix htv:        <http://www.w3.org/2011/http#> .
+@prefix jsonschema: <https://www.w3.org/2019/wot/json-schema#> .
+@prefix tdx:        <https://tdx.agentlab.ru/#> .
+@prefix saref:      <https://w3id.org/saref#> .
+@prefix ex:         <https://example.agentlab.ru/#> .
+
+ex:BatteryModel
+  a ex:Battery, tdx:ThingModel ;
+  dct:title "Generic Simple Battery" ;
+  td:hasPropertyAffordance ex:GenericStateOfCharge, ex:GenericBatteryPower ;
+  td:hasActionAffordance ex:GenericSetBatteryPower.
+
+ex:GenericStateOfCharge
+  a td:PropertyAffordance.
+
+ex:GenericBatteryPower
+  a td:PropertyAffordance.
+
+ex:GenericSetBatteryPower
+  a td:ActionAffordance ;
+  td:hasInputSchema ex:GenericSetBatteryPower_Input.
+
+ex:GenericSetBatteryPower_Input
+  a xsd:double.
+
+ex:Battery_1
+  a td:Thing, ex:Battery ;
+  ex:totalCapacity 30 ;
+  ex:chargeLevelMin 30 ;
+  ex:chargeLevelMax 70 ;
+  ex:chargingRateMax 30000 ;
+  ex:modulationSteps 60;
+  tdx:hasThingModel ex:BatteryModel ;
+  td:hasPropertyAffordance ex:Battery_1_StateOfCharge, ex:Battery_1_Power ;
+  td:hasActionAffordance ex:Battery_1_SetBatteryPowerAction.
+
+ex:Battery_1_StateOfCharge
+  a td:PropertyAffordance, ex:StateOfCharge ;
+  tdx:describedBy ex:GenericStateOfCharge.
+
+ex:Battery_1_Power
+  a td:PropertyAffordance, ex:Power ;
+  tdx:describedBy ex:GenericBatteryPower.
+
+ex:Battery_1_SetBatteryPowerAction
+  a td:ActionAffordance, ex:Power ;
+  tdx:describedBy ex:GenericSetBatteryPower.

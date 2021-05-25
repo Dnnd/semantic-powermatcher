@@ -1,0 +1,27 @@
+@prefix td:         <https://www.w3.org/2019/wot/td#> .
+@prefix schema:     <http://schema.org/> .
+@prefix hctl:       <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix dct:        <http://purl.org/dc/terms/> .
+@prefix wotsec:     <https://www.w3.org/2019/wot/security#> .
+@prefix xsd:        <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:       <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix htv:        <http://www.w3.org/2011/http#> .
+@prefix jsonschema: <https://www.w3.org/2019/wot/json-schema#> .
+@prefix tdx:        <https://tdx.agentlab.ru/#> .
+@prefix saref:      <https://w3id.org/saref#> .
+@prefix ex:         <https://example.agentlab.ru/#> .
+@prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sosa:       <http://www.w3.org/ns/sosa/> .
+@prefix ssn:        <http://www.w3.org/ns/ssn/>.
+
+ex:Battery_1_StateOfCharge_Observation_1
+  a sosa:Observation ;
+  sosa:hasSimpleResult "50"^^xsd:double ;
+  sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
+  tdx:describedByAffordance ex:Battery_1_StateOfCharge.
+
+ex:Battery_1_Power_Observation_1
+  a sosa:Observation ;
+  sosa:hasSimpleResult "0"^^xsd:double ;
+  sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
+  tdx:describedByAffordance ex:Battery_1_Power.

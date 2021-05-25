@@ -30,7 +30,7 @@ ex:House_1
 
 ex:Heater_1_IndoorTemperature_Observation_1
   a sosa:Observation ;
-  sosa:hasSimpleResult "10"^^xsd:double ;
+  sosa:hasSimpleResult "15"^^xsd:double ;
   sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
   tdx:describedByAffordance ex:Heater_1_IndoorTemperature ;
   sosa:observedProperty ex:Heater_1_IndoorTemperature.

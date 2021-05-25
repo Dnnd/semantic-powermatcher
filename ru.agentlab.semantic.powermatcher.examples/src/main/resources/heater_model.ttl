@@ -45,9 +45,9 @@ ex:GenericPowerDemand
 ex:Heater_1
   a td:Thing, ex:Heater ;
   tdx:hasThingModel ex:HeaterModel ;
-  ex:length "2.5"^^xsd:double ;
+  ex:length "30"^^xsd:double ;
   ex:height "2.5"^^xsd:double ;
-  ex:width "2.5"^^xsd:double ;
+  ex:width "20"^^xsd:double ;
   td:hasPropertyAffordance ex:Heater_1_IndoorTemperature, ex:Heater_1_OutdoorTemperature, ex:Heater_1_PowerDemand ;
   td:hasActionAffordance ex:Heater_1_SetHeatingPowerAction.
 
