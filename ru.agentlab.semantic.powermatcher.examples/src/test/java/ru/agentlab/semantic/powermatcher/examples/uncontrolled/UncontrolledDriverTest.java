@@ -40,14 +40,10 @@ public class UncontrolledDriverTest {
                 }
 
                 @Override
-                public float from() {
-                    return 0;
+                public String dataSource() {
+                    return "/tmp/data.csv";
                 }
 
-                @Override
-                public float to() {
-                    return 1000;
-                }
 
                 @Override
                 public int intervalMsec() {

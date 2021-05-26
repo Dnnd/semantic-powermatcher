@@ -2,10 +2,7 @@ package ru.agentlab.semantic.powermatcher.examples.geo;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
@@ -26,7 +23,7 @@ import java.util.concurrent.Executors;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_RESULT;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.PLACE;
 
-@Component
+@Component(configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class GeoExporter {
 
     private final Logger logger = LoggerFactory.getLogger(GeoExporter.class);

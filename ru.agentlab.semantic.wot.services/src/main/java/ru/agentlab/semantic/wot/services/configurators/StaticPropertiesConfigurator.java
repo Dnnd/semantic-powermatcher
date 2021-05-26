@@ -1,8 +1,14 @@
 package ru.agentlab.semantic.wot.services.configurators;
 
+import org.apache.zookeeper.data.Stat;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.agentlab.semantic.wot.services.api.DeclarativeServiceLaunchConfiguration;
@@ -16,9 +22,10 @@ import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.optiona
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.tp;
 import static ru.agentlab.semantic.wot.services.api.WotServicesVocabulary.*;
 
+@Component(configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
+@Designate(ocd = StaticPropertiesConfigurator.Config.class, factory = true)
 public class StaticPropertiesConfigurator implements ThingServiceConfigurator {
-
-    private Logger logger = LoggerFactory.getLogger(StaticPropertiesConfigurator.class);
+    private final Logger logger = LoggerFactory.getLogger(StaticPropertiesConfigurator.class);
     private Config config;
 
     @Activate
@@ -72,11 +79,15 @@ public class StaticPropertiesConfigurator implements ThingServiceConfigurator {
         return iri(config.modelIri());
     }
 
+    @ObjectClassDefinition(name = "Static Properties Configurator")
     public @interface Config {
+        @AttributeDefinition(name = MODEL_IRI_PROPERTY)
         String modelIri();
 
+        @AttributeDefinition(name = CONFIGURATOR_IRI_PROPERTY)
         String configuratorIRI();
 
+        @AttributeDefinition
         String servicePID();
     }
 

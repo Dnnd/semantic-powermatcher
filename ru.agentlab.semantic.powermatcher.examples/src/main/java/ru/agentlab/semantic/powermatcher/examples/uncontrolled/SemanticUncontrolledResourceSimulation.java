@@ -1,6 +1,6 @@
 package ru.agentlab.semantic.powermatcher.examples.uncontrolled;
 
-import org.apache.commons.math3.distribution.UniformRealDistribution;
+import com.opencsv.CSVReader;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -27,11 +27,17 @@ import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.ThingPropertyAffordance;
 import ru.agentlab.semantic.wot.utils.Utils;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.examples.Utils.openResourceStream;
@@ -40,26 +46,22 @@ import static ru.agentlab.semantic.powermatcher.vocabularies.Example.POWER;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.OBSERVATION;
 
 @Component(
-        name = "ru.agentlab.semantic.powermatcher.SemanticUncontrolledResourceSimulation",
         configurationPolicy = ConfigurationPolicy.REQUIRE,
         immediate = true
 )
 @Designate(ocd = SemanticUncontrolledResourceSimulation.Config.class)
 public class SemanticUncontrolledResourceSimulation {
     private static final Logger logger = LoggerFactory.getLogger(SemanticUncontrolledResourceSimulation.class);
-    private UniformRealDistribution random;
     private final Scheduler scheduler = Schedulers.newSingle(SemanticUncontrolledResourceSimulation.class.getName());
     private Disposable subscription;
     private SailRepository repository;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    @ObjectClassDefinition(id = "ru.agentlab.semantic.powermatcher.SemanticUncontrolledResourceSimulation")
+    @ObjectClassDefinition(name = "Uncontrolled Resource Simulation")
     public @interface Config {
         String thingIRI();
 
-        float from() default 0;
-
-        float to() default 10000;
+        String dataSource();
 
         int intervalMsec() default 1000;
 
@@ -73,10 +75,18 @@ public class SemanticUncontrolledResourceSimulation {
         this.repository = repositoryProvider.getRepository();
     }
 
+    public List<Float> readDataSource(File from) throws IOException {
+        var reader = new CSVReader(Files.newBufferedReader(from.toPath(), StandardCharsets.UTF_8));
+        return reader.readAll().stream()
+                     .map(values -> Float.parseFloat(values[0]))
+                     .collect(Collectors.toList());
+    }
+
     @Activate
-    public void activate(Config config) {
+    public void activate(Config config) throws IOException {
+
         logger.info("Starting semantic uncontrolled resource simulation...");
-        random = new UniformRealDistribution(config.from(), config.to());
+        var generator = new WindGeneratorModel(readDataSource(new File(config.dataSource())));
         SailRepositoryConnection connection = repository.getConnection();
         ChangeTrackerConnection sailConn = (ChangeTrackerConnection) connection.getSailConnection();
         ConnectionContext ctx = new ConnectionContext(executor, connection);
@@ -98,7 +108,7 @@ public class SemanticUncontrolledResourceSimulation {
                                 connection.close();
                             })
                             .subscribe(powerAffordance -> publishNewState(
-                                    random.sample(),
+                                    generator.next(),
                                     powerAffordance,
                                     connection,
                                     obsCtx

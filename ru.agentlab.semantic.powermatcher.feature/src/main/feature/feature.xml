@@ -6,8 +6,9 @@
     <feature name="semantic-powermatcher-demo" version="${project.version}">
         <bundle>mvn:ru.agentlab/ru.agentlab.semantic.powermatcher.examples/${project.version}</bundle>
         <bundle>mvn:ru.agentlab/ru.agentlab.semantic.wot/${project.version}</bundle>
-<!--        <feature dependency="true">changetracking</feature>-->
-<!--        <feature dependency="true">fp-demo</feature>-->
+        <bundle>mvn:ru.agentlab/ru.agentlab.semantic.wot.services/${project.version}</bundle>
+        <feature dependency="true">changetracking</feature>
+        <feature dependency="true">fp-demo</feature>
     </feature>
 
 </features>
