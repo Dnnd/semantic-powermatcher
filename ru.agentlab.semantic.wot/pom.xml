@@ -19,10 +19,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>flexiblepower-base</groupId>
-            <artifactId>flexiblepower.api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
         </dependency>
