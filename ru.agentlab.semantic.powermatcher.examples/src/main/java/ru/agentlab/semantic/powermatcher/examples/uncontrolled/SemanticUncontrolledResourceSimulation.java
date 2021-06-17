@@ -17,6 +17,7 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import ru.agentlab.changetracking.sail.ChangeTracker;
 import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.semantic.wot.observations.DefaultMetadata;
 import ru.agentlab.semantic.wot.observations.FloatObservation;
@@ -87,9 +88,7 @@ public class SemanticUncontrolledResourceSimulation {
 
         logger.info("Starting semantic uncontrolled resource simulation...");
         var generator = new WindGeneratorModel(readDataSource(new File(config.dataSource())));
-        SailRepositoryConnection connection = repository.getConnection();
-        ChangeTrackerConnection sailConn = (ChangeTrackerConnection) connection.getSailConnection();
-        ConnectionContext ctx = new ConnectionContext(executor, connection);
+        ConnectionContext ctx = new ConnectionContext(executor, repository, ChangeTracker.class);
         var thingRepository = new ThingRepository(ctx);
         var propertyAffordanceRepository = new ThingPropertyAffordanceRepository(ctx);
         var thingCtx = iri(config.thingContext());
@@ -104,13 +103,13 @@ public class SemanticUncontrolledResourceSimulation {
                             .flatMap(affordance -> Flux.interval(Duration.ofMillis(config.intervalMsec()), scheduler)
                                                        .map(sec -> affordance))
                             .doFinally(ev -> {
-                                sailConn.close();
-                                connection.close();
+                                ctx.getSailConnection().close();
+                                ctx.getConnection().close();
                             })
                             .subscribe(powerAffordance -> publishNewState(
                                     generator.next(),
                                     powerAffordance,
-                                    connection,
+                                    ctx.getConnection(),
                                     obsCtx
                             ));
         logger.info("Starting semantic uncontrolled resource simulation...Done");

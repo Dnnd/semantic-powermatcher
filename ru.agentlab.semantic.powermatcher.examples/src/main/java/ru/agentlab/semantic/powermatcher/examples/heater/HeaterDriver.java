@@ -14,6 +14,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
+import ru.agentlab.changetracking.sail.ChangeTracker;
 import ru.agentlab.semantic.wot.actions.FloatSetter;
 import ru.agentlab.semantic.wot.api.Action;
 import ru.agentlab.semantic.wot.api.Observation;
@@ -87,8 +88,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     public void activate(Config config) {
         setPowerSink = Sinks.many().unicast().onBackpressureBuffer();
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        var repoConn = repository.getConnection();
-        context = new ConnectionContext(executor, repoConn);
+        context = new ConnectionContext(executor, repository, ChangeTracker.class);
         var thingIRI = iri(config.thingIRI());
         var things = new ThingRepository(context);
         propertyAffordances = new ThingPropertyAffordanceRepository(context);
@@ -101,7 +101,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
                 iri(EXAMPLE_IRI, "GenericSetHeatingPower")
         )).flatMapMany(actionAffordance -> setPowerSink.asFlux().doOnNext(powerToSet -> {
             var setter = serializeFloatSetter(actionAffordance, powerToSet);
-            repoConn.add(setter, stateContext);
+            context.getConnection().add(setter, stateContext);
             logger.info("invoked power setting action={}", setter);
         })).subscribe();
 

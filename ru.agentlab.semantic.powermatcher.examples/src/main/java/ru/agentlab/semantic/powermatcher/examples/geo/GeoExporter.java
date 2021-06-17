@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import ru.agentlab.changetracking.sail.ChangeTracker;
 import ru.agentlab.semantic.wot.api.Observation;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
 import ru.agentlab.semantic.wot.observations.DefaultMetadata;
@@ -38,16 +39,13 @@ public class GeoExporter {
     @Activate
     public void activate() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        var repoConn = repository.getConnection();
-        var ctx = new ConnectionContext(executor, repoConn);
+        var ctx = new ConnectionContext(executor, repository, ChangeTracker.class);
         var propsRepo = new ThingPropertyAffordanceRepository(ctx);
         var geoRepo = new GeoRepository(ctx);
         subscription = discoverPlaceObservations(propsRepo)
                 .flatMap(obs -> geoRepo.get(obs.getValue()))
                 .doFinally(signal -> ctx.close())
-                .subscribe(place -> {
-                    logger.info("observed place: {}", place);
-                });
+                .subscribe(place -> logger.info("observed place: {}", place));
     }
 
     @Deactivate

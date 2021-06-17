@@ -1,7 +1,6 @@
 package ru.agentlab.semantic.powermatcher.examples.uncontrolled;
 
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.flexiblepower.messaging.Endpoint;
 import org.flexiblepower.ral.ResourceControlParameters;
 import org.flexiblepower.ral.drivers.uncontrolled.PowerState;
@@ -12,7 +11,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import reactor.core.Disposable;
-import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
+import ru.agentlab.changetracking.sail.ChangeTracker;
 import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.FloatObservationParser;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
@@ -86,9 +85,7 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
     @Activate
     public void activate(Config config) {
         logger.info("Uncontrolled semantic resource driver...");
-        SailRepositoryConnection conn = repository.getConnection();
-        ChangeTrackerConnection sailConn = (ChangeTrackerConnection) conn.getSailConnection();
-        var ctx = new ConnectionContext(executor, conn);
+        var ctx = new ConnectionContext(executor, repository, ChangeTracker.class);
         var thingRepository = new ThingRepository(ctx);
         var propertyAffordanceRepository = new ThingPropertyAffordanceRepository(ctx);
 
@@ -108,8 +105,8 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
                                            .doFinally(signal -> {
                                                thingRepository.cancel();
                                                propertyAffordanceRepository.cancel();
-                                               sailConn.close();
-                                               conn.close();
+                                               ctx.getSailConnection().close();
+                                               ctx.getConnection().close();
                                            })
                                            .subscribe(powerOutputObservation -> {
                                                logger.info(powerOutputObservation.toString());

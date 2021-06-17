@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import ru.agentlab.changetracking.sail.ChangeTracker;
+import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.services.api.DeclarativeServiceLaunchConfiguration;
 import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
@@ -47,7 +49,7 @@ public class ThingServiceFactory {
     public void bindSailRepositoryProvider(SailRepositoryProvider repositoryProvider) {
         var repo = repositoryProvider.getRepository();
         var executor = Executors.newSingleThreadExecutor();
-        context = new ConnectionContext(executor, repo.getConnection());
+        context = new ConnectionContext(executor, repo, ChangeTracker.class);
     }
 
     @Reference

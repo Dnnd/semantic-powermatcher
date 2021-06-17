@@ -15,6 +15,7 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import ru.agentlab.changetracking.sail.ChangeTracker;
 import ru.agentlab.semantic.wot.actions.FloatSetterParser;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
 import ru.agentlab.semantic.wot.observations.DefaultMetadata;
@@ -72,8 +73,7 @@ public class HeaterProvider {
         );
         ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         var interval = Duration.ofMillis(config.updateFrequency());
-        var repoConn = repository.getConnection();
-        context = new ConnectionContext(executor, repoConn);
+        context = new ConnectionContext(executor, repository, ChangeTracker.class);
         ThingRepository things = new ThingRepository(context);
         var propertyAffordances = new ThingPropertyAffordanceRepository(context);
         var actionAffordances = new ThingActionAffordanceRepository(context);

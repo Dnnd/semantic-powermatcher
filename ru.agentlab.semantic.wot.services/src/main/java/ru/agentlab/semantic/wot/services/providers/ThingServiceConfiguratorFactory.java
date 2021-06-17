@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import ru.agentlab.changetracking.filter.ChangetrackingFilter;
 import ru.agentlab.changetracking.filter.Match;
+import ru.agentlab.changetracking.sail.ChangeTracker;
 import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.services.api.ThingServiceConfiguratorConfig;
 import ru.agentlab.semantic.wot.services.repositories.ThingServiceConfiguratorsRepository;
@@ -57,7 +58,7 @@ public class ThingServiceConfiguratorFactory {
         logger.info("Activating configurators factory...");
         this.config = config;
         var executor = Executors.newSingleThreadExecutor();
-        var connCtx = new ConnectionContext(executor, repository.getConnection());
+        var connCtx = new ConnectionContext(executor, repository, ChangeTracker.class);
 
         var thingServicesRepo = new ThingServiceConfiguratorsRepository(connCtx);
         subscription = thingServicesRepo.discoverThingServiceConfigurators()
