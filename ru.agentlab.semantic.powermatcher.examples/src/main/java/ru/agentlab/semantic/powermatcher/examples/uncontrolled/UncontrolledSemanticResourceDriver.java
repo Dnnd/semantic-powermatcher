@@ -12,8 +12,8 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import reactor.core.Disposable;
 import ru.agentlab.changetracking.sail.ChangeTracker;
-import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.FloatObservationParser;
+import ru.agentlab.semantic.wot.observations.SensorMetadataParser;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
@@ -97,17 +97,13 @@ public class UncontrolledSemanticResourceDriver extends AbstractResourceDriver<P
                                            .flatMap(powerProp -> propertyAffordanceRepository.subscribeOnLatestObservations(
                                                    powerProp,
                                                    HAS_SIMPLE_RESULT,
-                                                   (obsIRI) -> new FloatObservationParser<>(new DefaultMetadataParser(
-                                                           obsIRI)),
+                                                   (obsIRI) -> new FloatObservationParser<>(
+                                                           new SensorMetadataParser(obsIRI)
+                                                   ),
                                                    Comparator.comparing(observation -> observation.getMetadata()
                                                                                                   .getLastModified())
                                            ))
-                                           .doFinally(signal -> {
-                                               thingRepository.cancel();
-                                               propertyAffordanceRepository.cancel();
-                                               ctx.getSailConnection().close();
-                                               ctx.getConnection().close();
-                                           })
+                                           .doAfterTerminate(ctx::close)
                                            .subscribe(powerOutputObservation -> {
                                                logger.info(powerOutputObservation.toString());
                                                publishState(new State(powerOutputObservation.getValue()));

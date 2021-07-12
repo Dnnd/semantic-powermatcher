@@ -17,7 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-@Component(configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Component(configurationPolicy = ConfigurationPolicy.REQUIRE, service = SailRepositoryProvider.class)
 @Designate(ocd = SailRepositoryProviderImpl.Config.class)
 public class SailRepositoryProviderImpl implements SailRepositoryProvider {
     private LocalRepositoryManager repositoryManager;
@@ -39,7 +39,6 @@ public class SailRepositoryProviderImpl implements SailRepositoryProvider {
         repositoryManager.init();
 
         ChangeTrackerConfig trackerConfig = new ChangeTrackerConfig(new NativeStoreConfig());
-        trackerConfig.setInteractiveNotifications(true);
         repositoryManager.addRepositoryConfig(new RepositoryConfig(
                 config.repoID(),
                 new SailRepositoryConfig(trackerConfig)

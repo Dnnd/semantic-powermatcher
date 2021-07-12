@@ -11,12 +11,8 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.agentlab.changetracking.sail.ChangeTracker;
-import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
-import ru.agentlab.semantic.wot.services.api.DeclarativeServiceLaunchConfiguration;
-import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
-import ru.agentlab.semantic.wot.services.api.ThingServiceConfigurator;
-import ru.agentlab.semantic.wot.services.api.ThingServiceScopedContext;
+import ru.agentlab.semantic.wot.services.api.*;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
 import ru.agentlab.semantic.wot.thing.Thing;
 import ru.agentlab.semantic.wot.utils.Utils;
@@ -29,14 +25,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 
-@Component(scope = ServiceScope.SINGLETON, immediate = true)
-@Designate(ocd = ThingServiceFactory.Config.class)
-public class ThingServiceFactory {
+@Component(scope = ServiceScope.SINGLETON, immediate = true, service = ThingServiceFactory.class)
+@Designate(ocd = ThingServiceFactoryImpl.Config.class)
+public class ThingServiceFactoryImpl implements ThingServiceFactory {
     private final List<ThingServiceConfigurator> preActivated = new CopyOnWriteArrayList<>();
 
     private final Map<String, Disposable> subscriptions = new ConcurrentHashMap<>();
 
-    private final Logger logger = LoggerFactory.getLogger(ThingServiceFactory.class);
+    private final Logger logger = LoggerFactory.getLogger(ThingServiceFactoryImpl.class);
     private volatile ConnectionContext context;
     private volatile ConfigurationAdmin configurationAdmin;
 
@@ -113,7 +109,8 @@ public class ThingServiceFactory {
         subscriptions.putIfAbsent(configurator.getConfiguratorPID(), subscription);
     }
 
-    private Mono<Configuration> registerThingServiceConfiguration(ThingServiceConfigurator configurator, Thing thing) {
+    @Override
+    public Mono<Configuration> registerThingServiceConfiguration(ThingServiceConfigurator configurator, Thing thing) {
         return Utils.supplyAsyncWithCancel(
                 () -> registerThingServiceConfigurationSync(configurator, thing),
                 context.getExecutor()
@@ -130,7 +127,8 @@ public class ThingServiceFactory {
         }, context.getExecutor());
     }
 
-    private Configuration registerThingServiceConfigurationSync(ThingServiceConfigurator configurator, Thing thing) {
+    @Override
+    public Configuration registerThingServiceConfigurationSync(ThingServiceConfigurator configurator, Thing thing) {
         try {
             DeclarativeServiceLaunchConfiguration launchConfiguration =
                     configurator.getServiceLaunchConfiguration(thing, context);

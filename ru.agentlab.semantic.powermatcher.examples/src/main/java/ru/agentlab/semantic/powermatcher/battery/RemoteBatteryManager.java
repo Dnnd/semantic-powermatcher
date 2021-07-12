@@ -3,8 +3,6 @@ package ru.agentlab.semantic.powermatcher.battery;
 import org.flexiblepower.bidding.strategies.api.BiddingStrategy;
 import org.flexiblepower.bidding.strategies.api.BiddingStrategyDefinition;
 import org.flexiblepower.bidding.strategies.priority.BasicPriorityBiddingStrategy;
-import org.flexiblepower.bidding.strategies.priority.BasicPriorityBiddingStrategyBuilder;
-import org.flexiblepower.bidding.strategies.priority.CostAwarePriorityBiddingStrategy;
 import org.flexiblepower.efi.BufferResourceManager;
 import org.flexiblepower.efi.buffer.*;
 import org.flexiblepower.efi.util.FillLevelFunction;

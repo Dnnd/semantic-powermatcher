@@ -41,7 +41,7 @@ public class UncontrolledDriverTest {
 
                 @Override
                 public String dataSource() {
-                    return "/tmp/data.csv";
+                    return "/tmp/wind_ts.csv";
                 }
 
 

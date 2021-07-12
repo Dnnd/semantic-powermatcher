@@ -20,9 +20,9 @@ import ru.agentlab.semantic.wot.actions.FloatSetter;
 import ru.agentlab.semantic.wot.api.Action;
 import ru.agentlab.semantic.wot.api.Observation;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
-import ru.agentlab.semantic.wot.observations.DefaultMetadata;
-import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.FloatObservationParser;
+import ru.agentlab.semantic.wot.observations.SensorMetadata;
+import ru.agentlab.semantic.wot.observations.SensorMetadataParser;
 import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
@@ -43,7 +43,6 @@ import java.util.concurrent.Executors;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.vocabularies.Example.*;
-import static ru.agentlab.semantic.powermatcher.vocabularies.Example.EXAMPLE_IRI;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.HAS_SIMPLE_RESULT;
 import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.ACTION_INVOCATION;
 
@@ -61,7 +60,7 @@ import static ru.agentlab.semantic.wot.vocabularies.Vocabularies.ACTION_INVOCATI
 public class BatteryDriver extends AbstractResourceDriver<AdvancedBatteryState, AdvancedBatteryControlParameters> {
     private SailRepository repository;
 
-    private final ObservationFactory<Float, DefaultMetadata> floatObservationsFactory;
+    private final ObservationFactory<Float, SensorMetadata> floatObservationsFactory;
     private Disposable onStateUpdateSubscription;
     private Sinks.Many<Double> setPowerSink;
     private Disposable onControlParametersReceived;
@@ -72,8 +71,7 @@ public class BatteryDriver extends AbstractResourceDriver<AdvancedBatteryState, 
     private final static Logger logger = LoggerFactory.getLogger(BatteryDriver.class);
 
     public BatteryDriver() {
-        floatObservationsFactory = (obsIri) -> new FloatObservationParser<>(new DefaultMetadataParser(
-                obsIri));
+        floatObservationsFactory = (obsIri) -> new FloatObservationParser<>(new SensorMetadataParser(obsIri));
     }
 
 
@@ -161,7 +159,7 @@ public class BatteryDriver extends AbstractResourceDriver<AdvancedBatteryState, 
                                                                      ThingPropertyAffordance stateOfCharge,
                                                                      ThingPropertyAffordance power) {
         var lastModifiedComparator = Comparator.comparing(
-                (Observation<Float, DefaultMetadata> obs) -> obs.getMetadata().getLastModified()
+                (Observation<Float, SensorMetadata> obs) -> obs.getMetadata().getLastModified()
         );
 
         var maxCapacity = battery.getProperty(TOTAL_CAPACITY)
@@ -216,14 +214,15 @@ public class BatteryDriver extends AbstractResourceDriver<AdvancedBatteryState, 
 
     private Model serializeFloatSetter(ThingActionAffordance affordance, double value) {
         IRI actionInvocation = iri(EXAMPLE_IRI, UUID.randomUUID().toString());
-        Action<Float, Void, DefaultMetadata> setter = new FloatSetter<>((float) value);
+        Action<Float, Void, SensorMetadata> setter = new FloatSetter<>((float) value);
         OffsetDateTime now = OffsetDateTime.now();
-        setter.setMetadata(new DefaultMetadata(
+        setter.setMetadata(new SensorMetadata(
                 affordance.getIRI(),
                 actionInvocation,
-                affordance.getThingIRI(),
+                iri(EXAMPLE_IRI, getClass().getSimpleName()),
                 now,
-                ACTION_INVOCATION
+                ACTION_INVOCATION,
+                affordance.getThingIRI()
         ));
         return setter.toModel();
     }

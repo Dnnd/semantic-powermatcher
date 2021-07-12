@@ -5,7 +5,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.osgi.service.component.annotations.*;
@@ -15,12 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import ru.agentlab.changetracking.sail.ChangeTracker;
-import ru.agentlab.changetracking.sail.ChangeTrackerConnection;
-import ru.agentlab.semantic.wot.observations.DefaultMetadata;
 import ru.agentlab.semantic.wot.observations.FloatObservation;
+import ru.agentlab.semantic.wot.observations.SensorMetadata;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
 import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
@@ -36,7 +33,6 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -53,10 +49,8 @@ import static ru.agentlab.semantic.wot.vocabularies.SSN.OBSERVATION;
 @Designate(ocd = SemanticUncontrolledResourceSimulation.Config.class)
 public class SemanticUncontrolledResourceSimulation {
     private static final Logger logger = LoggerFactory.getLogger(SemanticUncontrolledResourceSimulation.class);
-    private final Scheduler scheduler = Schedulers.newSingle(SemanticUncontrolledResourceSimulation.class.getName());
     private Disposable subscription;
     private SailRepository repository;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @ObjectClassDefinition(name = "Uncontrolled Resource Simulation")
     public @interface Config {
@@ -88,6 +82,8 @@ public class SemanticUncontrolledResourceSimulation {
 
         logger.info("Starting semantic uncontrolled resource simulation...");
         var generator = new WindGeneratorModel(readDataSource(new File(config.dataSource())));
+        var executor = Executors.newSingleThreadScheduledExecutor();
+        var scheduler = Schedulers.fromExecutor(executor);
         ConnectionContext ctx = new ConnectionContext(executor, repository, ChangeTracker.class);
         var thingRepository = new ThingRepository(ctx);
         var propertyAffordanceRepository = new ThingPropertyAffordanceRepository(ctx);
@@ -102,10 +98,7 @@ public class SemanticUncontrolledResourceSimulation {
                             ))
                             .flatMap(affordance -> Flux.interval(Duration.ofMillis(config.intervalMsec()), scheduler)
                                                        .map(sec -> affordance))
-                            .doFinally(ev -> {
-                                ctx.getSailConnection().close();
-                                ctx.getConnection().close();
-                            })
+                            .doAfterTerminate(ctx::close)
                             .subscribe(powerAffordance -> publishNewState(
                                     generator.next(),
                                     powerAffordance,
@@ -146,14 +139,15 @@ public class SemanticUncontrolledResourceSimulation {
                                  Resource stateContext) {
         logger.info("publishing new state: currentValue={}, powerAffordanceIRI={}", currentValue, powerAffordance);
         IRI obsId = iri(EXAMPLE_IRI, UUID.randomUUID().toString());
-        var obs = new FloatObservation<DefaultMetadata>((float) currentValue);
+        var obs = new FloatObservation<SensorMetadata>((float) currentValue);
         obs.setMetadata(
-                new DefaultMetadata(
+                new SensorMetadata(
                         powerAffordance.getIRI(),
                         obsId,
-                        powerAffordance.getThingIRI(),
+                        iri(EXAMPLE_IRI, getClass().getSimpleName()),
                         OffsetDateTime.now(),
-                        OBSERVATION
+                        OBSERVATION,
+                        powerAffordance.getThingIRI()
                 )
         );
         conn.begin();

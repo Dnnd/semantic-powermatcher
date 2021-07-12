@@ -44,5 +44,5 @@ ex:CurrentOutputAffordance_1
   a ex:Power, td:PropertyAffordance ;
   tdx:describedBy ex:GenericCurrentOutput.
 
-ex:CurrentWindSpeed_1
+ex:CurrentWindSpeed_1 a td:PropertyAffordance;
   tdx:describedBy ex:GenericWindSpeed.

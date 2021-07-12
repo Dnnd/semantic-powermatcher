@@ -18,10 +18,7 @@ import reactor.core.scheduler.Schedulers;
 import ru.agentlab.changetracking.sail.ChangeTracker;
 import ru.agentlab.semantic.wot.actions.FloatSetterParser;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
-import ru.agentlab.semantic.wot.observations.DefaultMetadata;
-import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
-import ru.agentlab.semantic.wot.observations.FloatObservation;
-import ru.agentlab.semantic.wot.observations.FloatObservationParser;
+import ru.agentlab.semantic.wot.observations.*;
 import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
@@ -124,7 +121,7 @@ public class HeaterProvider {
                    .flatMap(tick -> {
                        logger.info("heater simulation tick {}", tick);
                        ThingActionAffordance setPowerAffordance = state.getSetPowerAffordance();
-                       var metadataBuilder = new DefaultMetadataParser(setPowerAffordance.getIRI());
+                       var metadataBuilder = new SensorMetadataParser(setPowerAffordance.getIRI());
                        var actionBuilder = new FloatSetterParser<>(metadataBuilder);
 
                        var latestInvocation = actionAffordances.latestInvocation(
@@ -142,13 +139,14 @@ public class HeaterProvider {
 
     private Model makeFloatObservation(ThingPropertyAffordance affordance, double value, Resource... obsContext) {
         IRI observationIRI = iri(EXAMPLE_IRI, UUID.randomUUID().toString());
-        var obs = new FloatObservation<DefaultMetadata>((float) value);
-        obs.setMetadata(new DefaultMetadata(
+        var obs = new FloatObservation<SensorMetadata>((float) value);
+        obs.setMetadata(new SensorMetadata(
                                 affordance.getIRI(),
                                 observationIRI,
-                                affordance.getThingIRI(),
+                                iri(EXAMPLE_IRI, getClass().getSimpleName()),
                                 OffsetDateTime.now(),
-                                OBSERVATION
+                                OBSERVATION,
+                                affordance.getThingIRI()
                         )
         );
         return obs.toModel(obsContext);
@@ -218,10 +216,10 @@ public class HeaterProvider {
     private Mono<HeaterSimulationTwin> fetchInitialState(Thing thing,
                                                          ThingPropertyAffordanceRepository properties,
                                                          ThingActionAffordanceRepository actions) {
-        IRI powerAffordanceIRI = iri(EXAMPLE_IRI, "Heater_1_PowerDemand");
-        IRI outsideTemperatureIRI = iri(EXAMPLE_IRI, "Heater_1_OutdoorTemperature");
-        IRI insideTemperatureIRI = iri(EXAMPLE_IRI, "Heater_1_IndoorTemperature");
-        IRI setPowerActionIRI = iri(EXAMPLE_IRI, "Heater_1_SetHeatingPowerAction");
+        IRI powerAffordanceIRI = iri(EXAMPLE_IRI, "Heater_1_PowerDemandAffordance");
+        IRI outsideTemperatureIRI = iri(EXAMPLE_IRI, "Heater_1_OutdoorTemperatureAffordance");
+        IRI insideTemperatureIRI = iri(EXAMPLE_IRI, "Heater_1_IndoorTemperatureAffordance");
+        IRI setPowerActionIRI = iri(EXAMPLE_IRI, "Heater_1_SetHeatingPowerActionAffordance");
 
         var powerAffordanceMono = properties.getThingPropertyAffordance(
                 thing,
@@ -240,8 +238,8 @@ public class HeaterProvider {
                 setPowerActionIRI
         );
 
-        ObservationFactory<Float, DefaultMetadata> obsFactory = (obsIRI) -> {
-            var metadataBuilder = new DefaultMetadataParser(obsIRI);
+        ObservationFactory<Float, SensorMetadata> obsFactory = (obsIRI) -> {
+            var metadataBuilder = new SensorMetadataParser(obsIRI);
             return new FloatObservationParser<>(metadataBuilder);
         };
 
@@ -256,11 +254,11 @@ public class HeaterProvider {
                        return Mono.zip(
                                (observations) -> {
                                    var initialHeatingPower =
-                                           ((FloatObservation<DefaultMetadata>) observations[0]).getValue();
+                                           ((FloatObservation<SensorMetadata>) observations[0]).getValue();
                                    var initialOutdoorTemperature =
-                                           ((FloatObservation<DefaultMetadata>) observations[1]).getValue();
+                                           ((FloatObservation<SensorMetadata>) observations[1]).getValue();
                                    var initialIndoorTemperature =
-                                           ((FloatObservation<DefaultMetadata>) observations[2]).getValue();
+                                           ((FloatObservation<SensorMetadata>) observations[2]).getValue();
                                    var simulationModel = new HeaterSimulationModel(
                                            building,
                                            initialHeatingPower,

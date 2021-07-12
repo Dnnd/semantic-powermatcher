@@ -10,9 +10,9 @@ import reactor.core.publisher.Flux;
 import ru.agentlab.changetracking.sail.ChangeTracker;
 import ru.agentlab.semantic.wot.api.Observation;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
-import ru.agentlab.semantic.wot.observations.DefaultMetadata;
-import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.IRIObservationParser;
+import ru.agentlab.semantic.wot.observations.SensorMetadata;
+import ru.agentlab.semantic.wot.observations.SensorMetadataParser;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.services.api.SailRepositoryProvider;
 import ru.agentlab.semantic.wot.thing.ConnectionContext;
@@ -53,9 +53,9 @@ public class GeoExporter {
         subscription.dispose();
     }
 
-    private Flux<Observation<IRI, DefaultMetadata>> discoverPlaceObservations(ThingPropertyAffordanceRepository props) {
-        ObservationFactory<IRI, DefaultMetadata> iriObsBuilderFactory = (obsIRI) ->
-                new IRIObservationParser<>(new DefaultMetadataParser(obsIRI));
+    private Flux<Observation<IRI, SensorMetadata>> discoverPlaceObservations(ThingPropertyAffordanceRepository props) {
+        ObservationFactory<IRI, SensorMetadata> iriObsBuilderFactory = (obsIRI) ->
+                new IRIObservationParser<>(new SensorMetadataParser(obsIRI));
 
         return props.discoverPropertyAffordancesWithType(PLACE)
                     .flatMap(locationAffordance -> {
@@ -63,7 +63,7 @@ public class GeoExporter {
                                 locationAffordance.getIRI(),
                                 iriObsBuilderFactory
                         );
-                        Comparator<Observation<IRI, DefaultMetadata>> byLastModified = Comparator.comparing(
+                        Comparator<Observation<IRI, SensorMetadata>> byLastModified = Comparator.comparing(
                                 obs -> obs.getMetadata().getLastModified()
                         );
                         return latestObs.concatWith(props.subscribeOnLatestObservations(

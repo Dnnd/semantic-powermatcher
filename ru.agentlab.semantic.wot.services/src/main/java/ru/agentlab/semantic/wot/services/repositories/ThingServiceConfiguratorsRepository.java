@@ -22,8 +22,7 @@ import java.util.stream.Stream;
 
 import static org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder.var;
 import static org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns.tp;
-import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.ADDED;
-import static ru.agentlab.changetracking.filter.ChangetrackingFilter.Filtering.REMOVED;
+import static ru.agentlab.changetracking.filter.Filtering.*;
 import static ru.agentlab.semantic.wot.services.api.WotServicesVocabulary.THING_SERVICE_CONFIGURATOR;
 
 public class ThingServiceConfiguratorsRepository {
@@ -47,7 +46,7 @@ public class ThingServiceConfiguratorsRepository {
                                                  null,
                                                  RDF.TYPE,
                                                  THING_SERVICE_CONFIGURATOR,
-                                                 ChangetrackingFilter.Filtering.ALL
+                                                 ALL
                                          )
                                          .build();
         return conn.events(context.getScheduler())

@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ThingServiceConfiguratorFactoryTest {
+public class ThingServiceConfiguratorFactoryImplTest {
     @Mock
     ConfigurationAdmin admin;
 
@@ -46,15 +46,15 @@ public class ThingServiceConfiguratorFactoryTest {
         when(admin.createFactoryConfiguration(any(), any()))
                 .thenReturn(config);
 
-        var configuratorFactory = new ThingServiceConfiguratorFactory();
+        var configuratorFactory = new ThingServiceConfiguratorFactoryImpl();
 
         SailRegistry.getInstance().add(new ChangeTrackingFactory());
         configuratorFactory.bindConfigurationAdmin(admin);
 
         try (EmbeddedChangetrackingRepo repo = EmbeddedChangetrackingRepo.makeTempRepository("test")) {
             try (var conn = repo.getConnection();
-                 var configuratorsTTL = ThingServiceConfiguratorFactoryTest.class.getClassLoader()
-                                                                                 .getResourceAsStream(
+                 var configuratorsTTL = ThingServiceConfiguratorFactoryImplTest.class.getClassLoader()
+                                                                                     .getResourceAsStream(
                                                                                          "configurators.ttl")
             ) {
 

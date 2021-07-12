@@ -18,10 +18,11 @@ ex:Battery_1_StateOfCharge_Observation_1
   a sosa:Observation ;
   sosa:hasSimpleResult "50"^^xsd:double ;
   sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:Battery_1_StateOfCharge.
+  sosa:observedProperty ex:Battery_1_StateOfCharge.
 
 ex:Battery_1_Power_Observation_1
   a sosa:Observation ;
   sosa:hasSimpleResult "0"^^xsd:double ;
   sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
-  tdx:describedByAffordance ex:Battery_1_Power.
+  sosa:hasFeatureOfInterest ex:Battery_1;
+  sosa:observedProperty ex:Battery_1_Power.

@@ -10,7 +10,6 @@
     <modules>
         <module>ru.agentlab.semantic.powermatcher.feature</module>
         <module>ru.agentlab.semantic.powermatcher.examples</module>
-        <module>ru.agentlab.semantic.wot</module>
         <module>ru.agentlab.semantic.wot.services</module>
     </modules>
     <packaging>pom</packaging>
@@ -19,8 +18,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reosources.sourceEncoding>UTF-8</project.reosources.sourceEncoding>
         <reactor.version>3.4.3</reactor.version>
-        <maven.compiler.source>15</maven.compiler.source>
-        <maven.compiler.target>15</maven.compiler.target>
+        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.target>16</maven.compiler.target>
         <flexiblepower-base.version>1.2.0-SNAPSHOT</flexiblepower-base.version>
         <fpai-apps.version>1.2.0-SNAPSHOT</fpai-apps.version>
         <powermatcher.version>1.2.0-SNAPSHOT</powermatcher.version>
@@ -34,7 +33,7 @@
                 <groupId>org.eclipse.rdf4j</groupId>
                 <artifactId>rdf4j-storage</artifactId>
                 <type>pom</type>
-                <version>3.6.0</version>
+                <version>3.7.0</version>
             </dependency>
             <dependency>
                 <groupId>org.osgi</groupId>
@@ -61,7 +60,7 @@
             <dependency>
                 <groupId>ru.agentlab</groupId>
                 <artifactId>changetracking-sail</artifactId>
-                <version>1.0.1-SNAPSHOT</version>
+                <version>1.0.2-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>flexiblepower-base</groupId>
@@ -88,6 +87,11 @@
                 <artifactId>net.powermatcher.api</artifactId>
                 <version>${powermatcher.version}</version>
             </dependency>
+            <dependency>
+                <groupId>ru.agentlab.rdf4j</groupId>
+                <artifactId>ru.agentlab.semantic.wot</artifactId>
+                <version>4.0.0-SNAPSHOT</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -113,7 +117,7 @@
     <repositories>
         <repository>
             <id>agentlab-snapshots</id>
-            <url>https://nexus.agentlab.ru/nexus/repository/maven-snapshots</url>
+            <url>https://nexus.agentlab.ru/nexus/repository/maven-snapshots/</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
@@ -124,7 +128,7 @@
         </repository>
         <repository>
             <id>agentlab-releases</id>
-            <url>https://nexus.agentlab.ru/nexus/repository/maven-releases</url>
+            <url>https://nexus.agentlab.ru/nexus/repository/maven-releases/</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

@@ -19,9 +19,9 @@ import ru.agentlab.semantic.wot.actions.FloatSetter;
 import ru.agentlab.semantic.wot.api.Action;
 import ru.agentlab.semantic.wot.api.Observation;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
-import ru.agentlab.semantic.wot.observations.DefaultMetadata;
-import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.FloatObservationParser;
+import ru.agentlab.semantic.wot.observations.SensorMetadata;
+import ru.agentlab.semantic.wot.observations.SensorMetadataParser;
 import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
@@ -58,7 +58,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
 
     private SailRepository repository;
 
-    private final ObservationFactory<Float, DefaultMetadata> floatObservationsFactory;
+    private final ObservationFactory<Float, SensorMetadata> floatObservationsFactory;
     private Disposable onStateUpdateSubscription;
     private Sinks.Many<Double> setPowerSink;
     private Disposable onControlParametersReceived;
@@ -67,8 +67,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     private ThingActionAffordanceRepository actionAffordances;
 
     public HeaterDriver() {
-        floatObservationsFactory = (obsIri) -> new FloatObservationParser<>(new DefaultMetadataParser(
-                obsIri));
+        floatObservationsFactory = (obsIri) -> new FloatObservationParser<>(new SensorMetadataParser(obsIri));
     }
 
 
@@ -158,7 +157,7 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
     private Flux<HeaterResourceState> subscribeOnHeaterStateUpdates(ThingPropertyAffordance indoorTemperature,
                                                                     ThingPropertyAffordance heatingPower) {
         var lastModifiedComparator = Comparator.comparing(
-                (Observation<Float, DefaultMetadata> obs) -> obs.getMetadata().getLastModified()
+                (Observation<Float, SensorMetadata> obs) -> obs.getMetadata().getLastModified()
         );
 
         var heatingPowerUpdates = propertyAffordances
@@ -186,14 +185,15 @@ public class HeaterDriver extends AbstractResourceDriver<HeaterState, HeaterCont
 
     private Model serializeFloatSetter(ThingActionAffordance affordance, double value) {
         IRI actionInvocation = iri(EXAMPLE_IRI, UUID.randomUUID().toString());
-        Action<Float, Void, DefaultMetadata> setter = new FloatSetter<>((float) value);
+        Action<Float, Void, SensorMetadata> setter = new FloatSetter<>((float) value);
         OffsetDateTime now = OffsetDateTime.now();
-        setter.setMetadata(new DefaultMetadata(
+        setter.setMetadata(new SensorMetadata(
                 affordance.getIRI(),
                 actionInvocation,
-                affordance.getThingIRI(),
+                iri(EXAMPLE_IRI, getClass().getSimpleName()),
                 now,
-                ACTION_INVOCATION
+                ACTION_INVOCATION,
+                affordance.getThingIRI()
         ));
         return setter.toModel();
     }

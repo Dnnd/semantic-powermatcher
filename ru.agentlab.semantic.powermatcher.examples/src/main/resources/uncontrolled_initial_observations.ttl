@@ -27,23 +27,22 @@ ex:WindGeneratorModel_1_GeneratorLocation_Observation_1
   a tdx:PropertyState ;
   tdx:hasValue ex:WindGeneratorSite ;
   sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
-  sosa:observedPropeorty ex:WindGeneratorModel_1_GeneratorLocation ;
-  sosa:madeBySensor ex:WindGeneratorModel_1 ;
-  tdx:describedByAffordance ex:WindGeneratorModel_1_GeneratorLocation.
+  sosa:featureOfInterest ex:WindGeneratorModel_1 ;
+  sosa:observedProperty ex:WindGeneratorModel_1_GeneratorLocation.
 
 ex:CurrentWindSpeedObservation_1
   a tdx:PropertyState ;
   sosa:hasSimpleResult "10"^^xsd:double ;
   sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
-  sosa:observedPropeorty ex:CurrentWindSpeed_1 ;
-  sosa:madeBySensor ex:WindGeneratorModel_1 ;
+  sosa:observedProperty ex:CurrentWindSpeed_1 ;
+  sosa:featureOfInterest ex:WindGeneratorModel_1 ;
   tdx:describedByAffordance ex:CurrentWindSpeed_1.
 
 ex:CurrentOutputObservation_1
   a tdx:PropertyState ;
   sosa:hasSimpleResult "10000"^^xsd:double ;
-  sosa:observedPropeorty ex:CurrentOutputAffordance_1 ;
-  sosa:madeBySensor ex:WindGeneratorModel_1 ;
+  sosa:observedProperty ex:CurrentOutputAffordance_1 ;
+  sosa:featureOfInterest ex:WindGeneratorModel_1 ;
   sosa:resultTime "2021-03-10T01:01Z"^^xsd:dateTime ;
   tdx:describedByAffordance ex:CurrentOutputAffordance_1.
 

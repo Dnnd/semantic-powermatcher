@@ -23,7 +23,7 @@ ex:GenericHeaterLocation
 
 ex:GenericSetHeatingPower
   a td:ActionAffordance, ex:SetCommand ;
-  td:hasInputSchema ex:GenricSetPowerInput.
+  td:hasInputSchema ex:GenericSetPowerInput.
 
 ex:GenericSetHeatingPowerInput
   a xsd:double.
@@ -48,7 +48,10 @@ ex:Heater_1
   ex:length "30"^^xsd:double ;
   ex:height "2.5"^^xsd:double ;
   ex:width "20"^^xsd:double ;
-  td:hasPropertyAffordance ex:Heater_1_IndoorTemperature, ex:Heater_1_OutdoorTemperature, ex:Heater_1_PowerDemand ;
+  td:hasPropertyAffordance ex:Heater_1_IndoorTemperatureAffordance,
+                           ex:Heater_1_OutdoorTemperatureAffordance,
+                           ex:Heater_1_LocationAffordance,
+                           ex:Heater_1_PowerDemandAffordance ;
   td:hasActionAffordance ex:Heater_1_SetHeatingPowerAction.
 
 ex:Heater_1_LocationAffordance
@@ -60,16 +63,16 @@ ex:Heater_1_SetHeatingPowerAction
   td:hasInputSchema ex:GenericSetHeatingPowerInput ;
   tdx:describedBy ex:GenericSetHeatingPower.
 
-ex:Heater_1_IndoorTemperature
+ex:Heater_1_IndoorTemperatureAffordance
   a ex:Temperature, td:PropertyAffordance ;
   ex:LocationType ex:Inside ;
   tdx:describedBy ex:GenericIndoorTemperature.
 
-ex:Heater_1_OutdoorTemperature
+ex:Heater_1_OutdoorTemperatureAffordance
   a ex:Temperature, td:PropertyAffordance ;
   ex:LocationType ex:Outside ;
   tdx:describedBy ex:GenericOutdoorTemperature.
 
-ex:Heater_1_PowerDemand
+ex:Heater_1_PowerDemandAffordance
   a ex:Power, td:PropertyAffordance ;
   tdx:describedBy ex:GenericPowerDemand.

@@ -1,6 +1,5 @@
 package ru.agentlab.semantic.powermatcher.battery;
 
-import org.flexiblepower.context.FlexiblePowerContext;
 import org.flexiblepower.ral.drivers.battery.BatteryMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

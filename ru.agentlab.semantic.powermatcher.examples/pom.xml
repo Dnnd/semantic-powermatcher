@@ -10,10 +10,6 @@
     <packaging>bundle</packaging>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>ru.agentlab.semantic.powermatcher.examples</artifactId>
-    <properties>
-        <maven.compiler.source>15</maven.compiler.source>
-        <maven.compiler.target>15</maven.compiler.target>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>org.osgi</groupId>
@@ -26,11 +22,6 @@
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>osgi.annotation</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ru.agentlab</groupId>
-            <artifactId>ru.agentlab.semantic.wot</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>fpai-apps</groupId>
@@ -81,6 +72,16 @@
             <groupId>ru.agentlab</groupId>
             <artifactId>ru.agentlab.semantic.wot.services</artifactId>
             <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>ru.agentlab.rdf4j</groupId>
+            <artifactId>ru.agentlab.semantic.wot</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.30</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

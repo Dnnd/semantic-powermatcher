@@ -20,10 +20,10 @@ import reactor.core.scheduler.Schedulers;
 import ru.agentlab.changetracking.sail.ChangeTracker;
 import ru.agentlab.semantic.wot.actions.FloatSetterParser;
 import ru.agentlab.semantic.wot.api.ObservationFactory;
-import ru.agentlab.semantic.wot.observations.DefaultMetadata;
-import ru.agentlab.semantic.wot.observations.DefaultMetadataParser;
 import ru.agentlab.semantic.wot.observations.FloatObservation;
 import ru.agentlab.semantic.wot.observations.FloatObservationParser;
+import ru.agentlab.semantic.wot.observations.SensorMetadata;
+import ru.agentlab.semantic.wot.observations.SensorMetadataParser;
 import ru.agentlab.semantic.wot.repositories.ThingActionAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingPropertyAffordanceRepository;
 import ru.agentlab.semantic.wot.repositories.ThingRepository;
@@ -45,7 +45,8 @@ import java.util.concurrent.Executors;
 
 import static org.eclipse.rdf4j.model.util.Values.iri;
 import static ru.agentlab.semantic.powermatcher.examples.Utils.openResourceStream;
-import static ru.agentlab.semantic.powermatcher.vocabularies.Example.*;
+import static ru.agentlab.semantic.powermatcher.vocabularies.Example.EXAMPLE_IRI;
+import static ru.agentlab.semantic.powermatcher.vocabularies.Example.TOTAL_CAPACITY;
 import static ru.agentlab.semantic.wot.vocabularies.SSN.OBSERVATION;
 
 @Component(
@@ -125,7 +126,7 @@ public class BatterySimulation {
                    .flatMap(tick -> {
                        logger.info("battery simulation tick {}", tick);
                        ThingActionAffordance setPowerAffordance = state.getSetPowerAffordance();
-                       var metadataBuilder = new DefaultMetadataParser(setPowerAffordance.getIRI());
+                       var metadataBuilder = new SensorMetadataParser(setPowerAffordance.getIRI());
                        var actionBuilder = new FloatSetterParser<>(metadataBuilder);
 
                        var latestInvocation = actionAffordances.latestInvocation(
@@ -143,13 +144,14 @@ public class BatterySimulation {
 
     private Model makeFloatObservation(ThingPropertyAffordance affordance, double value, Resource... obsContext) {
         IRI observationIRI = iri(EXAMPLE_IRI, UUID.randomUUID().toString());
-        var obs = new FloatObservation<DefaultMetadata>((float) value);
-        obs.setMetadata(new DefaultMetadata(
+        var obs = new FloatObservation<SensorMetadata>((float) value);
+        obs.setMetadata(new SensorMetadata(
                                 affordance.getIRI(),
                                 observationIRI,
-                                affordance.getThingIRI(),
+                                iri(EXAMPLE_IRI, getClass().getSimpleName()),
                                 OffsetDateTime.now(),
-                                OBSERVATION
+                                OBSERVATION,
+                                affordance.getThingIRI()
                         )
         );
         return obs.toModel(obsContext);
@@ -229,8 +231,8 @@ public class BatterySimulation {
                 setPowerActionIRI
         );
 
-        ObservationFactory<Float, DefaultMetadata> obsFactory = (obsIRI) -> {
-            var metadataBuilder = new DefaultMetadataParser(obsIRI);
+        ObservationFactory<Float, SensorMetadata> obsFactory = (obsIRI) -> {
+            var metadataBuilder = new SensorMetadataParser(obsIRI);
             return new FloatObservationParser<>(metadataBuilder);
         };
 
@@ -243,9 +245,9 @@ public class BatterySimulation {
                        return Mono.zip(
                                (observations) -> {
                                    var initialPower =
-                                           ((FloatObservation<DefaultMetadata>) observations[0]).getValue();
+                                           ((FloatObservation<SensorMetadata>) observations[0]).getValue();
                                    var initialStateOfCharge =
-                                           ((FloatObservation<DefaultMetadata>) observations[1]).getValue();
+                                           ((FloatObservation<SensorMetadata>) observations[1]).getValue();
 
                                    var simulationModel = makeSimpleBatteryModel(thing, initialStateOfCharge);
                                    simulationModel.setRunningMode(Measure.valueOf(initialPower, SI.WATT));
